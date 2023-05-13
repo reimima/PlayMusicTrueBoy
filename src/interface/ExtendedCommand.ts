@@ -1,4 +1,4 @@
-import type { ApplicationCommandData, Interaction } from 'discord.js';
+import type { ApplicationCommandData, AutocompleteInteraction, Interaction } from 'discord.js';
 import pkg from 'log4js';
 
 import { ExpansionBase } from './ExpansionBase';
@@ -18,4 +18,6 @@ export abstract class ExtendedCommand extends ExpansionBase {
     }
 
     public abstract execute(interaction: Interaction): Promise<void>;
+
+    public abstract autoCompletion(interaction: AutocompleteInteraction): Promise<void>;
 }

@@ -51,7 +51,11 @@ export class MusicBot extends Client {
             this[event.data.once ? 'once' : 'on'](event.data.name, event.execute.bind(this));
         });
 
-        await this.commandManager.registerAll().catch(e => this.logger.error(e));
+        await this.commandManager
+            .registerAll([`${Loader.__dirname(import.meta.url)}/commands/**/*.ts`])
+            .catch(e => this.logger.error(e));
+
+        await this.player.extractors.loadDefault();
 
         await super.login(process.env['DISCORD_TOKEN']).catch(e => this.logger.error(e));
     };

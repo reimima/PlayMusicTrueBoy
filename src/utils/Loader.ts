@@ -5,7 +5,6 @@ import { glob } from 'glob';
 
 import type { MusicBot } from '../MusicBot';
 
-// eslint-disable-next-line @typescript-eslint/no-extraneous-class
 export class Loader {
     public static __dirname = (path: string): string => dirname(fileURLToPath(path));
 

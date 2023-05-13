@@ -15,12 +15,8 @@ export class CommandManager extends Collection<string, ExtendedCommand> {
         super();
     }
 
-    public readonly registerAll = async (): Promise<void> => {
-        (
-            await Loader.loadModules<ExtendedCommand>(this.client, [
-                `${Loader.__dirname(import.meta.url)}/commands/**/*.ts`,
-            ])
-        ).forEach(command => {
+    public readonly registerAll = async (paths: string[]): Promise<void> => {
+        (await Loader.loadModules<ExtendedCommand>(this.client, paths)).forEach(command => {
             if (this.has(command.data.name))
                 this.logger.error(
                     `Failed to register ${command.data.name} `,
