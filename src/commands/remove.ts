@@ -1,4 +1,7 @@
-import type { ChatInputCommandInteraction } from 'discord.js';
+import {
+    ApplicationCommandOptionType,
+    type ChatInputCommandInteraction,
+} from 'discord.js';
 
 import { ExtendedCommand } from '../interface';
 import type { MusicBot } from '../MusicBot';
@@ -6,8 +9,16 @@ import type { MusicBot } from '../MusicBot';
 export default class extends ExtendedCommand {
     public constructor(client: MusicBot) {
         super(client, {
-            name: 'leave',
-            description: 'ボイスチャンネルから退出します。',
+            name: 'remove',
+            description: '指定したトラックを削除します',
+            options: [
+                {
+                    name: 'target',
+                    description: '指定するトラック',
+                    type: ApplicationCommandOptionType.Integer,
+                    required: true,
+                },
+            ],
         });
     }
 
@@ -40,19 +51,32 @@ export default class extends ExtendedCommand {
 
         const guild = interaction.guild;
         const queue = this.client.player.queues.get(guild);
+        const target = interaction.options.get('target', true).value;
 
-        if (queue) {
-            await queue.player.destroy();
+        if (typeof target !== 'number') return;
+
+        if (!queue) {
+            await interaction.followUp({
+                content: '何も曲が流れていません！',
+            });
+            return;
         }
 
-        const channel = (await interaction.guild.members.fetch(interaction.user.id)).voice
-            .channel;
+        if (target < 1 || target > queue.tracks.size) {
+            await interaction.followUp({
+                content: `削除したいトラックは \`1~${queue.tracks.size}\` の間で指定してください。`,
+            });
+            return;
+        }
 
-        if (!channel) return;
+        const track = queue.tracks.at(target - 1);
+
+        if (!track) return;
+
+        queue.removeTrack(track);
 
         await interaction.followUp({
-            // eslint-disable-next-line @typescript-eslint/no-base-to-string
-            content: `${channel.toString()} から退出しました！`,
+            content: `[${track.author}] ${track.title} - (${track.duration}) をキューから削除しました！`,
         });
     };
 

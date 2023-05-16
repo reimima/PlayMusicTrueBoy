@@ -30,6 +30,13 @@ export default class extends ExtendedCommand {
     public override execute = async (interaction: ChatInputCommandInteraction): Promise<void> => {
         await interaction.deferReply();
 
+        if (!(await interaction.guild?.members.fetch(interaction.user.id))?.voice.channel) {
+            await interaction.followUp({
+                content: 'ボイスチャンネルに接続した状態で行ってください！',
+            });
+            return;
+        }
+
         const song = interaction.options.get('song')?.value;
 
         if (typeof song !== 'string') return;
@@ -104,6 +111,26 @@ export default class extends ExtendedCommand {
         const song = interaction.options.get('song', true).value;
 
         if (typeof song !== 'string') return;
+
+        if (!song) {
+            await interaction.respond([
+                {
+                    name: '検索ワードを入力してください！',
+                    value: '',
+                },
+            ]);
+            return;
+        }
+
+        if (/^.*(youtu.be\/|list=)([^#&?]*).*/.exec(song)) {
+            await interaction.respond([
+                {
+                    name: 'プレイリストURLはこのオプションを選択して送信してください！',
+                    value: song.slice(0, 100),
+                },
+            ]);
+            return;
+        }
 
         const results = await this.client.player.search(song);
 

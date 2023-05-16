@@ -6,8 +6,8 @@ import type { MusicBot } from '../MusicBot';
 export default class extends ExtendedCommand {
     public constructor(client: MusicBot) {
         super(client, {
-            name: 'leave',
-            description: 'ボイスチャンネルから退出します。',
+            name: 'skip',
+            description: '現在再生中の曲をスキップします',
         });
     }
 
@@ -41,19 +41,26 @@ export default class extends ExtendedCommand {
         const guild = interaction.guild;
         const queue = this.client.player.queues.get(guild);
 
-        if (queue) {
-            await queue.player.destroy();
+        if (!queue?.isPlaying()) {
+            await interaction.followUp({
+                content: '何も曲が流れていません！',
+            });
+            return;
         }
 
-        const channel = (await interaction.guild.members.fetch(interaction.user.id)).voice
-            .channel;
+        const success = queue.node.skip();
 
-        if (!channel) return;
-
-        await interaction.followUp({
-            // eslint-disable-next-line @typescript-eslint/no-base-to-string
-            content: `${channel.toString()} から退出しました！`,
-        });
+        if (success) {
+            await interaction.followUp({
+                content: `${`[${queue.currentTrack?.author ?? '*'}] ${
+                    queue.currentTrack?.title ?? '*'
+                } - (${queue.currentTrack?.duration ?? '*'})`.slice(0, 100)} をスキップしました！`,
+            });
+        } else {
+            await interaction.followUp({
+                content: `正常にスキップが完了しませんでした、もう一度行うか <@871527050685612042> に問い合わせてください。`,
+            });
+        }
     };
 
     public override autoCompletion = (): Promise<never> =>
