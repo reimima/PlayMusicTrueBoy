@@ -45,8 +45,7 @@ export default class extends ExtendedCommand {
             await queue.player.destroy();
         }
 
-        const channel = (await interaction.guild.members.fetch(interaction.user.id)).voice
-            .channel;
+        const channel = (await interaction.guild.members.fetch(interaction.user.id)).voice.channel;
 
         if (!channel) return;
 

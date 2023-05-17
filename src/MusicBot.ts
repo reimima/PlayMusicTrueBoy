@@ -5,7 +5,7 @@ import { Client } from 'discord.js';
 import { config } from 'dotenv';
 import pkg from 'log4js';
 
-import type { ExtendedEvent } from './interface';
+import type { ExtendedEvent, ExtendedPlayerEvent } from './interface';
 import { CommandManager } from './manager';
 import { Loader } from './utils';
 
@@ -34,8 +34,9 @@ export class MusicBot extends Client {
         this.player = new Player(this, {
             ytdlOptions: {
                 filter: 'audioonly',
-                highWaterMark: 1 << 30,
-                dlChunkSize: 0,
+                quality: 'highestaudio',
+                dlChunkSize: 10240,
+                highWaterMark: 1024 * 512,
             },
         });
 
@@ -49,6 +50,17 @@ export class MusicBot extends Client {
             ])
         ).forEach(event => {
             this[event.data.once ? 'once' : 'on'](event.data.name, event.execute.bind(this));
+        });
+
+        (
+            await Loader.loadModules<ExtendedPlayerEvent>(this, [
+                `${Loader.__dirname(import.meta.url)}/player-events/**/*.ts`,
+            ])
+        ).forEach(event => {
+            this.player.events[event.data.once ? 'once' : 'on'](
+                event.data.name,
+                event.execute.bind(this),
+            );
         });
 
         await this.commandManager

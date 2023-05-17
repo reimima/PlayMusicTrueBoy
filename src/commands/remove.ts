@@ -1,7 +1,4 @@
-import {
-    ApplicationCommandOptionType,
-    type ChatInputCommandInteraction,
-} from 'discord.js';
+import { ApplicationCommandOptionType, type ChatInputCommandInteraction } from 'discord.js';
 
 import { ExtendedCommand } from '../interface';
 import type { MusicBot } from '../MusicBot';

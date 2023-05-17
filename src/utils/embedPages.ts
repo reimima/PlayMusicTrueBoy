@@ -36,6 +36,15 @@ export const embedPages = async (
         components: rows,
     } as BaseMessageOptions | InteractionReplyOptions;
 
+    if (pages.length < 2) {
+        rows[0]?.setComponents(
+            buttons[0]!.setDisabled(true),
+            buttons[1]!.setDisabled(true),
+            buttons[2]!.setDisabled(true),
+            buttons[3]!.setDisabled(true),
+        );
+    }
+
     const message = options.fromButton
             ? await source.channel?.send(contents as BaseMessageOptions)
             : await source.reply(contents as InteractionReplyOptions),
@@ -101,7 +110,9 @@ export const embedPages = async (
 
         await fetchedPagedMessage.edit({
             embeds: [
-                pages[currentPage]!.setFooter({ text: `Page : ${currentPage + 1}/${pages.length}` }),
+                pages[currentPage]!.setFooter({
+                    text: `Page : ${currentPage + 1}/${pages.length}`,
+                }),
             ],
             // @ts-expect-error
             components: rows,

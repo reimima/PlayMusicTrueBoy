@@ -1,7 +1,7 @@
 {
     "name": "-",
     "version": "0.0.0",
-    "description": "A useful discord bot for namek.",
+    "description": "A useful discord music bot for namek.",
     "main": "src/index.ts",
     "license": "MIT",
     "type": "module",
@@ -9,11 +9,11 @@
     "author": "reimima#3439 <reimima0916@gmail.com>",
     "repository": {
         "type": "git",
-        "url": "git+ssh://git@github.com:reimima/WeAreJapaneseGoblin.git"
+        "url": "git+ssh://git@github.com:reimima/PlayMusicTrueBoy.git"
     },
     "bugs": {
         "email": "reimima0916@gmail.com",
-        "url": "https://github.com/reimima/WeAreJapaneseGoblin/issues"
+        "url": "https://github.com/reimima/PlayMusicTrueBoy/issues"
     },
     "scripts": {
         "build": "node scripts/build.js",
@@ -30,21 +30,21 @@
         "discord-player": "^6.3.0",
         "discord.js": "14.11.1-dev.1683418213-37181ab.0",
         "dotenv": "^16.0.3",
-        "esbuild": "^0.17.18",
-        "glob": "^10.2.3",
+        "esbuild": "^0.17.19",
+        "glob": "^10.2.4",
         "log4js": "^6.9.1",
         "nodemon": "^2.0.22",
-        "play-dl": "^1.9.6",
         "prettier": "^2.8.8",
         "pretty-bytes": "^6.1.0",
         "tsx": "^3.12.7",
-        "typescript": "^5.0.4"
+        "typescript": "^5.0.4",
+        "ytdl-core": "^4.11.4"
     },
     "devDependencies": {
         "@types/eslint": "^8.37.0",
-        "@types/node": "^20.1.0",
-        "@typescript-eslint/eslint-plugin": "^5.59.2",
-        "@typescript-eslint/parser": "^5.59.2",
+        "@types/node": "^20.1.7",
+        "@typescript-eslint/eslint-plugin": "^5.59.6",
+        "@typescript-eslint/parser": "^5.59.6",
         "eslint": "^8.40.0",
         "eslint-config-prettier": "^8.8.0",
         "eslint-import-resolver-typescript": "^3.5.5",

@@ -44,7 +44,9 @@ export default class extends ExtendedCommand {
         const queue = this.client.player.queues.get(guild);
 
         const track = queue?.currentTrack;
-        const tracks = queue?.tracks.map((m, i) => `${i + 1}. [**[${m.author}] ${m.title}**](${m.url})`);
+        const tracks = queue?.tracks.map(
+            (m, i) => `${i + 1}. [**[${m.author}] ${m.title}**](${m.url})`,
+        );
         const individualTracks = this.slice(tracks ?? ['']);
 
         if (!track) return;
@@ -77,7 +79,9 @@ export default class extends ExtendedCommand {
                 embeds.push(
                     new EmbedBuilder()
                         .setColor('Random')
-                        .setTitle(`[🎶 Now Playing] - **[${nowPlaying.author}] ${nowPlaying.title}**`)
+                        .setTitle(
+                            `[🎶 Now Playing] - **[${nowPlaying.author}] ${nowPlaying.title}**`,
+                        )
                         .setURL(nowPlaying.url),
                 );
                 return embeds;
@@ -87,7 +91,9 @@ export default class extends ExtendedCommand {
                 embeds.push(
                     new EmbedBuilder()
                         .setColor('Random')
-                        .setTitle(`[🎶 Now Playing] - **[${nowPlaying.author}] ${nowPlaying.title}**`)
+                        .setTitle(
+                            `[🎶 Now Playing] - **[${nowPlaying.author}] ${nowPlaying.title}**`,
+                        )
                         .setURL(nowPlaying.url)
                         .setDescription(`${track.join('\n')}`),
                 ),
