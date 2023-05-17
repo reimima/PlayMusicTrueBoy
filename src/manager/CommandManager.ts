@@ -28,7 +28,7 @@ export class CommandManager extends Collection<string, ExtendedCommand> {
     };
 
     public readonly subscribe = async (): Promise<void> => {
-        const target = this.client.guilds.cache.get('1075366696220626965');
+        const target = this.client.guilds.cache.get('705003456984907786');
 
         const subscribed = (await target?.commands.fetch()) ?? new Collection();
 

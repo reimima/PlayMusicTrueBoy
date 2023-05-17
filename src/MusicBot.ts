@@ -23,7 +23,7 @@ export class MusicBot extends Client {
 
     public constructor() {
         super({
-            intents: ['Guilds', 'GuildIntegrations', 'GuildVoiceStates'],
+            intents: ['Guilds', 'GuildIntegrations', 'GuildVoiceStates', 'GuildMembers'],
             allowedMentions: {
                 repliedUser: false,
             },

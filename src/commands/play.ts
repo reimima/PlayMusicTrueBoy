@@ -65,6 +65,7 @@ export default class extends ExtendedCommand {
                 leaveOnEnd: false,
                 leaveOnStop: false,
                 leaveOnEmpty: true,
+                volume: 50,
                 metadata: {
                     channel: interaction.channel,
                     skipLoop: false,
