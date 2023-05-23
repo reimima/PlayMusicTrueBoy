@@ -1,5 +1,5 @@
 import type { Track } from 'discord-player';
-import { type ChatInputCommandInteraction, EmbedBuilder } from 'discord.js';
+import { type ChatInputCommandInteraction, EmbedBuilder, formatEmoji } from 'discord.js';
 
 import { ExtendedCommand } from '../interface';
 import type { MusicBot } from '../MusicBot';
@@ -18,14 +18,14 @@ export default class extends ExtendedCommand {
 
         if (!(await interaction.guild?.members.fetch(interaction.user.id))?.voice.channel) {
             await interaction.followUp({
-                content: 'ボイスチャンネルに接続した状態で行ってください！',
+                content: '❌ | ボイスチャンネルに接続した状態で行ってください！',
             });
             return;
         }
 
         if (!interaction.guild?.members.me?.voice.channel) {
             await interaction.followUp({
-                content: 'ボットがボイスチャンネルに接続していません！',
+                content: '❌ | ボットがボイスチャンネルに接続していません！',
             });
             return;
         }
@@ -35,7 +35,7 @@ export default class extends ExtendedCommand {
             interaction.guild.members.me.voice.channel
         ) {
             await interaction.followUp({
-                content: 'ボットと同じボイスチャンネルに接続してください！',
+                content: '❌ | ボットと同じボイスチャンネルに接続してください！',
             });
             return;
         }
@@ -55,7 +55,10 @@ export default class extends ExtendedCommand {
 
         await interaction
             .followUp({
-                content: 'キューを読み込んでいます...',
+                content: `${formatEmoji(
+                    this.client._emojis.org,
+                    true,
+                )} | キューを読み込んでいます...`,
             })
             .then(async message => {
                 await Promise.all([
@@ -79,9 +82,7 @@ export default class extends ExtendedCommand {
                 embeds.push(
                     new EmbedBuilder()
                         .setColor('Random')
-                        .setTitle(
-                            `[🎶 Now Playing] - **[${nowPlaying.author}] ${nowPlaying.title}**`,
-                        )
+                        .setTitle(`**[${nowPlaying.author}] ${nowPlaying.title}**`)
                         .setURL(nowPlaying.url),
                 );
                 return embeds;
@@ -91,9 +92,7 @@ export default class extends ExtendedCommand {
                 embeds.push(
                     new EmbedBuilder()
                         .setColor('Random')
-                        .setTitle(
-                            `[🎶 Now Playing] - **[${nowPlaying.author}] ${nowPlaying.title}**`,
-                        )
+                        .setTitle(`**[${nowPlaying.author}] ${nowPlaying.title}**`)
                         .setURL(nowPlaying.url)
                         .setDescription(`${track.join('\n')}`),
                 ),

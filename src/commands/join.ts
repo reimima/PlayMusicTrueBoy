@@ -1,5 +1,5 @@
 import type { ChatInputCommandInteraction, VoiceChannel } from 'discord.js';
-import { ApplicationCommandOptionType, ChannelType } from 'discord.js';
+import { ApplicationCommandOptionType, ChannelType, formatEmoji } from 'discord.js';
 
 import { ExtendedCommand } from '../interface';
 import type { MusicBot } from '../MusicBot';
@@ -46,14 +46,14 @@ export default class extends ExtendedCommand {
             !(await interaction.guild.members.fetch(interaction.user.id)).voice.channel
         ) {
             await interaction.followUp({
-                content: 'チャンネルを指定またはボイスチャンネルに接続してください！',
+                content: '❌ | チャンネルを指定またはボイスチャンネルに接続してください！',
             });
             return;
         }
 
         if (channel && channel.type !== ChannelType.GuildVoice) {
             await interaction.followUp({
-                content: 'ボイスチャンネルを指定してください！',
+                content: '❌ | ボイスチャンネルを指定してください！',
             });
             return;
         }
@@ -69,12 +69,18 @@ export default class extends ExtendedCommand {
                     )
                     .then(async () => {
                         await interaction.followUp({
-                            content: `正常に接続が完了しました！`,
+                            content: `${formatEmoji(
+                                this.client._emojis.checkyel,
+                                true,
+                            )} | 正常に接続が完了しました！`,
                         });
                     });
             } else {
                 await interaction.followUp({
-                    content: '既にボイスチャンネルに接続済みです！',
+                    content: `${formatEmoji(
+                        this.client._emojis.miz,
+                        true,
+                    )} | 既にボイスチャンネルに接続済みです！`,
                 });
             }
         } catch (e) {
@@ -83,7 +89,7 @@ export default class extends ExtendedCommand {
             queue.delete();
 
             await interaction.followUp({
-                content: 'ボイスチャンネルに接続できません。権限などを確認してください。',
+                content: '❌ | ボイスチャンネルに接続できません。権限などを確認してください。',
             });
         }
     };

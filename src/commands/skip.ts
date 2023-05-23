@@ -1,4 +1,4 @@
-import type { ChatInputCommandInteraction } from 'discord.js';
+import { type ChatInputCommandInteraction, formatEmoji } from 'discord.js';
 
 import { ExtendedCommand } from '../interface';
 import type { MusicBot } from '../MusicBot';
@@ -16,14 +16,14 @@ export default class extends ExtendedCommand {
 
         if (!(await interaction.guild?.members.fetch(interaction.user.id))?.voice.channel) {
             await interaction.followUp({
-                content: 'ボイスチャンネルに接続した状態で行ってください！',
+                content: '❌ | ボイスチャンネルに接続した状態で行ってください！',
             });
             return;
         }
 
         if (!interaction.guild?.members.me?.voice.channel) {
             await interaction.followUp({
-                content: 'ボットがボイスチャンネルに接続していません！',
+                content: '❌ | ボットがボイスチャンネルに接続していません！',
             });
             return;
         }
@@ -33,7 +33,7 @@ export default class extends ExtendedCommand {
             interaction.guild.members.me.voice.channel
         ) {
             await interaction.followUp({
-                content: 'ボットと同じボイスチャンネルに接続してください！',
+                content: '❌ | ボットと同じボイスチャンネルに接続してください！',
             });
             return;
         }
@@ -43,7 +43,7 @@ export default class extends ExtendedCommand {
 
         if (!queue?.isPlaying()) {
             await interaction.followUp({
-                content: '何も曲が流れていません！',
+                content: '❌ | 何も曲が流れていません！',
             });
             return;
         }
@@ -52,13 +52,15 @@ export default class extends ExtendedCommand {
 
         if (success) {
             await interaction.followUp({
-                content: `${`[${queue.currentTrack?.author ?? '*'}] ${
-                    queue.currentTrack?.title ?? '*'
-                } - (${queue.currentTrack?.duration ?? '*'})`.slice(0, 100)} をスキップしました！`,
+                content: `${formatEmoji(this.client._emojis.checkyel, true)} | [${`[${
+                    queue.currentTrack?.author ?? '*'
+                }] ${queue.currentTrack?.title ?? '*'} - (${
+                    queue.currentTrack?.duration ?? '*'
+                })](${queue.currentTrack?.url ?? '*'})`.slice(0, 100)} をスキップしました！`,
             });
         } else {
             await interaction.followUp({
-                content: `正常にスキップが完了しませんでした、もう一度行うか <@871527050685612042> に問い合わせてください。`,
+                content: `❌ | 正常にスキップが完了しませんでした、もう一度行うか <@871527050685612042> に問い合わせてください。`,
             });
         }
     };

@@ -1,10 +1,20 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-/* eslint-disable @typescript-eslint/ban-ts-comment */
-import type { BaseMessageOptions, EmbedBuilder, InteractionReplyOptions } from 'discord.js';
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle, CommandInteraction } from 'discord.js';
+import type {
+    BaseMessageOptions,
+    ButtonInteraction,
+    EmbedBuilder,
+    InteractionReplyOptions,
+} from 'discord.js';
+import {
+    ActionRowBuilder,
+    ButtonBuilder,
+    ButtonStyle,
+    ChatInputCommandInteraction,
+    ComponentType,
+} from 'discord.js';
 
 export const embedPages = async (
-    source: CommandInteraction,
+    source: ChatInputCommandInteraction,
     pages: EmbedBuilder[],
     options: {
         fromButton: boolean;
@@ -14,18 +24,23 @@ export const embedPages = async (
     const buttons = [
             new ButtonBuilder()
                 .setCustomId('first')
-                .setLabel('<<')
-                .setStyle(ButtonStyle.Secondary)
+                .setLabel('⏪')
+                .setStyle(ButtonStyle.Primary)
                 .setDisabled(true),
             new ButtonBuilder()
                 .setCustomId('previous')
-                .setLabel('<')
-                .setStyle(ButtonStyle.Secondary)
+                .setLabel('◀️')
+                .setStyle(ButtonStyle.Success)
                 .setDisabled(true),
-            new ButtonBuilder().setCustomId('next').setLabel('>').setStyle(ButtonStyle.Secondary),
-            new ButtonBuilder().setCustomId('last').setLabel('>>').setStyle(ButtonStyle.Secondary),
+            new ButtonBuilder()
+                .setCustomId('delete')
+                .setLabel('🗑️')
+                .setStyle(ButtonStyle.Danger)
+                .setDisabled(false),
+            new ButtonBuilder().setCustomId('next').setLabel('▶️').setStyle(ButtonStyle.Success),
+            new ButtonBuilder().setCustomId('last').setLabel('⏩').setStyle(ButtonStyle.Primary),
         ],
-        rows = [new ActionRowBuilder().addComponents(buttons)];
+        rows = [new ActionRowBuilder<ButtonBuilder>().addComponents(buttons)];
 
     let currentPage = 0;
 
@@ -40,28 +55,31 @@ export const embedPages = async (
         rows[0]?.setComponents(
             buttons[0]!.setDisabled(true),
             buttons[1]!.setDisabled(true),
-            buttons[2]!.setDisabled(true),
+            buttons[2]!.setDisabled(false),
             buttons[3]!.setDisabled(true),
+            buttons[4]!.setDisabled(true),
         );
     }
 
-    const message = options.fromButton
-            ? await source.channel?.send(contents as BaseMessageOptions)
-            : await source.reply(contents as InteractionReplyOptions),
-        pagedMessage =
-            source instanceof CommandInteraction && !options.fromButton
-                ? await source.fetchReply()
-                : message;
+    const sent = options.fromButton
+        ? await source.channel?.send(contents as BaseMessageOptions)
+        : await source.reply(contents as InteractionReplyOptions);
+    const fetched =
+        source instanceof ChatInputCommandInteraction && !options.fromButton
+            ? await source.fetchReply()
+            : sent;
 
-    const filter = (res: { customId: string }) =>
-            ['first', 'previous', 'next', 'last'].includes(res.customId),
-        collecter = pagedMessage?.createMessageComponentCollector({
-            filter,
-            time: options.timeOut,
-        });
+    const filter = (interaction: ButtonInteraction) =>
+        ['first', 'previous', 'delete', 'next', 'last'].includes(interaction.customId);
+    const collecter = fetched?.createMessageComponentCollector({
+        filter,
+        componentType: ComponentType.Button,
+        time: options.timeOut,
+    });
 
-    const fetchedPagedMessage = source.channel?.messages.cache.get(pagedMessage?.id ?? '');
-    if (!fetchedPagedMessage) return;
+    const collected = source.channel?.messages.cache.get(fetched!.id);
+
+    if (!collected) return;
 
     collecter?.on('collect', async interaction => {
         switch (interaction.customId) {
@@ -70,6 +88,9 @@ export const embedPages = async (
                 break;
             case 'previous':
                 currentPage = currentPage > 0 ? --currentPage : pages.length - 1;
+                break;
+            case 'delete':
+                currentPage = 404;
                 break;
             case 'next':
                 currentPage = currentPage + 1 < pages.length ? ++currentPage : 0;
@@ -86,15 +107,21 @@ export const embedPages = async (
                     buttons[1]!.setDisabled(true),
                     buttons[2]!.setDisabled(false),
                     buttons[3]!.setDisabled(false),
+                    buttons[4]!.setDisabled(false),
                 );
                 break;
+
+            case 404:
+                await collected.delete();
+                return;
 
             case pages.length - 1:
                 rows[0]?.setComponents(
                     buttons[0]!.setDisabled(false),
                     buttons[1]!.setDisabled(false),
-                    buttons[2]!.setDisabled(true),
+                    buttons[2]!.setDisabled(false),
                     buttons[3]!.setDisabled(true),
+                    buttons[4]!.setDisabled(true),
                 );
                 break;
 
@@ -104,17 +131,17 @@ export const embedPages = async (
                     buttons[1]!.setDisabled(false),
                     buttons[2]!.setDisabled(false),
                     buttons[3]!.setDisabled(false),
+                    buttons[4]!.setDisabled(false),
                 );
                 break;
         }
 
-        await fetchedPagedMessage.edit({
+        await collected.edit({
             embeds: [
                 pages[currentPage]!.setFooter({
                     text: `Page : ${currentPage + 1}/${pages.length}`,
                 }),
             ],
-            // @ts-expect-error
             components: rows,
         });
 
@@ -123,25 +150,25 @@ export const embedPages = async (
     });
 
     collecter?.on('end', async (_, reason) => {
-        if (reason !== 'messageDelete' && fetchedPagedMessage.editable) {
+        if (reason !== 'messageDelete' && collected.editable) {
             rows[0]?.setComponents(
                 buttons[0]!.setDisabled(true),
                 buttons[1]!.setDisabled(true),
                 buttons[2]!.setDisabled(true),
                 buttons[3]!.setDisabled(true),
+                buttons[4]!.setDisabled(true),
             );
-            await fetchedPagedMessage
+            await collected
                 .edit({
                     embeds: [
                         pages[currentPage]!.setFooter({
                             text: `Page : ${currentPage + 1}/${pages.length}`,
                         }),
                     ],
-                    // @ts-expect-error
                     components: rows,
                 })
                 .catch(e => console.error(e));
         }
     });
-    return fetchedPagedMessage;
+    return collected;
 };

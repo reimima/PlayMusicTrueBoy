@@ -1,4 +1,4 @@
-import type { ChatInputCommandInteraction } from 'discord.js';
+import { type ChatInputCommandInteraction, formatEmoji } from 'discord.js';
 
 import { ExtendedCommand } from '../interface';
 import type { MusicBot } from '../MusicBot';
@@ -16,14 +16,14 @@ export default class extends ExtendedCommand {
 
         if (!(await interaction.guild?.members.fetch(interaction.user.id))?.voice.channel) {
             await interaction.followUp({
-                content: 'ボイスチャンネルに接続した状態で行ってください！',
+                content: '❌ | ボイスチャンネルに接続した状態で行ってください！',
             });
             return;
         }
 
         if (!interaction.guild?.members.me?.voice.channel) {
             await interaction.followUp({
-                content: 'ボットがボイスチャンネルに接続していません！',
+                content: '❌ | ボットがボイスチャンネルに接続していません！',
             });
             return;
         }
@@ -33,7 +33,7 @@ export default class extends ExtendedCommand {
             interaction.guild.members.me.voice.channel
         ) {
             await interaction.followUp({
-                content: 'ボットと同じボイスチャンネルに接続してください！',
+                content: '❌ | ボットと同じボイスチャンネルに接続してください！',
             });
             return;
         }
@@ -51,7 +51,10 @@ export default class extends ExtendedCommand {
 
         await interaction.followUp({
             // eslint-disable-next-line @typescript-eslint/no-base-to-string
-            content: `${channel.toString()} から退出しました！`,
+            content: `${formatEmoji(
+                this.client._emojis.checkyel,
+                true,
+            )} | <#${channel.id}> から退出しました！`,
         });
     };
 

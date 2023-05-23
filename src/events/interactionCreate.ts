@@ -1,7 +1,7 @@
 import { inspect } from 'node:util';
 
 import type { BaseMessageOptions, Interaction } from 'discord.js';
-import { EmbedBuilder, InteractionType } from 'discord.js';
+import { EmbedBuilder, formatEmoji, InteractionType } from 'discord.js';
 
 import { ExtendedEvent } from '../interface';
 import type { MusicBot } from '../MusicBot';
@@ -32,7 +32,12 @@ export default class extends ExtendedEvent {
                 embeds: [
                     new EmbedBuilder()
                         .setColor('Red')
-                        .setTitle('インタラクション実行中での予期せぬエラー')
+                        .setTitle(
+                            `${formatEmoji(
+                                this.client._emojis.zoomcat,
+                                true,
+                            )} インタラクション実行中での予期せぬエラー`,
+                        )
                         .setDescription(
                             inspect(e, { depth: 1, maxArrayLength: null }).substring(0, 4096),
                         ),

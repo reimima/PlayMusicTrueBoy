@@ -5,6 +5,7 @@ import { Client } from 'discord.js';
 import { config } from 'dotenv';
 import pkg from 'log4js';
 
+import { emojis } from './emojis';
 import type { ExtendedEvent, ExtendedPlayerEvent } from './interface';
 import { CommandManager } from './manager';
 import { Loader } from './utils';
@@ -20,6 +21,8 @@ export class MusicBot extends Client {
     public readonly player: Player;
 
     public readonly commandManager: CommandManager;
+
+    public readonly _emojis = emojis;
 
     public constructor() {
         super({

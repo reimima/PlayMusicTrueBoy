@@ -5,7 +5,7 @@ import type {
     GuildMember,
     VoiceChannel,
 } from 'discord.js';
-import { ApplicationCommandOptionType } from 'discord.js';
+import { ApplicationCommandOptionType, formatEmoji } from 'discord.js';
 
 import { ExtendedCommand } from '../interface';
 import type { MusicBot } from '../MusicBot';
@@ -32,7 +32,7 @@ export default class extends ExtendedCommand {
 
         if (!(await interaction.guild?.members.fetch(interaction.user.id))?.voice.channel) {
             await interaction.followUp({
-                content: 'ボイスチャンネルに接続した状態で行ってください！',
+                content: '❌ | ボイスチャンネルに接続した状態で行ってください！',
             });
             return;
         }
@@ -50,7 +50,7 @@ export default class extends ExtendedCommand {
 
         if (!result?.tracks.length) {
             await interaction.followUp({
-                content: '曲が見つかりませんでした。',
+                content: '❌ | 曲が見つかりませんでした。',
             });
             return;
         }
@@ -68,6 +68,7 @@ export default class extends ExtendedCommand {
                 volume: 50,
                 metadata: {
                     channel: interaction.channel,
+                    requestor: interaction.user,
                     skipLoop: false,
                 },
             });
@@ -85,13 +86,15 @@ export default class extends ExtendedCommand {
             queue.delete();
 
             await interaction.followUp({
-                content: 'ボイスチャンネルに接続できません。権限などを確認してください。',
+                content: '❌ | ボイスチャンネルに接続できません。権限などを確認してください。',
             });
         }
 
         await interaction
             .followUp({
-                content: `\`${result.playlist ? 'playlist' : 'track'}\` を読み込んでいます...`,
+                content: `${formatEmoji(this.client._emojis.org, true)} | \`${
+                    result.playlist ? 'playlist' : 'track'
+                }\` を読み込んでいます...`,
             })
             .then(async message => {
                 const track = result.tracks[0];
