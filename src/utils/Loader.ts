@@ -7,10 +7,7 @@ import type { ExClient } from '../ExClient';
 
 export const __dirname = (path: string): string => dirname(fileURLToPath(path));
 
-export const loadModules = async <T>(
-    client: ExClient,
-    paths: string[],
-): Promise<Awaited<T[]>> => {
+export const loadModules = async <T>(client: ExClient, paths: string[]): Promise<Awaited<T[]>> => {
     const files: string[] = [];
 
     await Promise.all(
@@ -25,10 +22,7 @@ export const loadModules = async <T>(
 
     return Promise.all(
         files.map(file =>
-            import(file).then(
-                (i: { default: new (_client: ExClient) => Promise<T> }) =>
-                    new i.default(client),
-            ),
+            import(file).then((i: { default: new (_client: ExClient) => Promise<T> }) => new i.default(client)),
         ),
     );
 };

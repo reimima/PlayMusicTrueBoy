@@ -67,34 +67,20 @@ export class ExClient extends Client {
 
         this.logger.info('Initialize done. Logging in...');
 
-        await super
-            .login(process.env['DISCORD_TOKEN'])
-            .catch(e => this.logger.error(e));
+        await super.login(process.env['DISCORD_TOKEN']).catch(e => this.logger.error(e));
     };
 
     private readonly loadEvents = async (): Promise<void> =>
-        (
-            await loadModules<ExEvent>(this, [
-                `${__dirname(import.meta.url)}/events/**/*.ts`,
-            ])
-        ).forEach(event => {
-            this[event.data.once ? 'once' : 'on'](
-                event.data.name,
-                event.run.bind(this),
-            );
+        (await loadModules<ExEvent>(this, [`${__dirname(import.meta.url)}/events/**/*.ts`])).forEach(event => {
+            this[event.data.once ? 'once' : 'on'](event.data.name, event.run.bind(this));
         });
 
     private readonly loadPlayerEvents = async (): Promise<void> =>
-        (
-            await loadModules<ExPlayerEvent>(this, [
-                `${__dirname(import.meta.url)}/player-events/**/*.ts`,
-            ])
-        ).forEach(event => {
-            this.player.events[event.data.once ? 'once' : 'on'](
-                event.data.name,
-                event.run.bind(this),
-            );
-        });
+        (await loadModules<ExPlayerEvent>(this, [`${__dirname(import.meta.url)}/player-events/**/*.ts`])).forEach(
+            event => {
+                this.player.events[event.data.once ? 'once' : 'on'](event.data.name, event.run.bind(this));
+            },
+        );
 
     private readonly loadCommands = async (): Promise<void> =>
         await this.commandManager
@@ -112,9 +98,7 @@ export class ExClient extends Client {
 
     private readonly loadRawPlayerEvents = (): Player =>
         this.player
-            .on('debug', message =>
-                this.logger.debug(`DP raw debug -`, message),
-            )
+            .on('debug', message => this.logger.debug(`DP raw debug -`, message))
             .on('error', error => this.logger.error('DP raw error -', error));
 
     public readonly shutdown = (): void => {

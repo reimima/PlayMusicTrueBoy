@@ -9,6 +9,5 @@ export default class extends ExEvent {
         });
     }
 
-    public readonly run = (error: Error): void =>
-        this.logger.error('DJS Warning -', error);
+    public readonly run = (error: Error): void => this.logger.error('DJS Warning -', error);
 }

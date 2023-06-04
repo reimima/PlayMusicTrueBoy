@@ -50,13 +50,7 @@
                     "caseInsensitive": true,
                     "order": "asc"
                 },
-                "groups": [
-                    "builtin",
-                    "external",
-                    "internal",
-                    ["sibling", "parent"],
-                    "object"
-                ],
+                "groups": ["builtin", "external", "internal", ["sibling", "parent"], "object"],
                 "newlines-between": "always",
                 "pathGroups": [
                     {

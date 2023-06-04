@@ -10,8 +10,5 @@ export default class extends ExEvent {
     }
 
     public readonly run = (event: CloseEvent, id: number): void =>
-        this.logger.info(
-            `Shard: ${id} has disconnected.`,
-            `Code: ${event.code}, Reason: ${event.reason}`,
-        );
+        this.logger.info(`Shard: ${id} has disconnected.`, `Code: ${event.code}, Reason: ${event.reason}`);
 }

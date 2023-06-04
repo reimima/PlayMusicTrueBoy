@@ -16,10 +16,7 @@ export default class extends ExEvent {
 
         if (message.author.bot) return;
 
-        if (
-            new RegExp(`^<@!?${message.client.user.id}>$`).test(message.content)
-        )
-            await this.mentioned(message);
+        if (new RegExp(`^<@!?${message.client.user.id}>$`).test(message.content)) await this.mentioned(message);
     };
 
     private readonly mentioned = async (message: Message): Promise<void> => {

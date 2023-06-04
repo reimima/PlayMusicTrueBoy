@@ -1,8 +1,4 @@
-import type {
-    ApplicationCommandData,
-    AutocompleteInteraction,
-    Interaction,
-} from 'discord.js';
+import type { ApplicationCommandData, AutocompleteInteraction, Interaction } from 'discord.js';
 import type { Logger } from 'log4js';
 import log4js from 'log4js';
 
@@ -14,16 +10,11 @@ const { getLogger } = log4js;
 export abstract class ExCommand {
     protected readonly logger: Logger;
 
-    protected constructor(
-        protected readonly client: ExClient,
-        public readonly data: ApplicationCommandData,
-    ) {
+    protected constructor(protected readonly client: ExClient, public readonly data: ApplicationCommandData) {
         this.logger = getLogger(data.name);
     }
 
     public abstract run(interaction: Interaction): Promise<unknown>;
 
-    public abstract autoCompletion(
-        interaction: AutocompleteInteraction,
-    ): Promise<unknown>;
+    public abstract autoCompletion(interaction: AutocompleteInteraction): Promise<unknown>;
 }

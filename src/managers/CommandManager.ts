@@ -25,10 +25,7 @@ export class CommandManager extends Collection<string, ExCommand> {
     public readonly registerAll = async (paths: string[]): Promise<void> => {
         (await loadModules<ExCommand>(this.client, paths)).forEach(command => {
             if (this.has(command.data.name))
-                this.logger.error(
-                    `Failed to register ${command.data.name} `,
-                    `${command.data.name} is used`,
-                );
+                this.logger.error(`Failed to register ${command.data.name} `, `${command.data.name} is used`);
 
             this.set(command.data.name, command);
         });
@@ -40,30 +37,15 @@ export class CommandManager extends Collection<string, ExCommand> {
 
         const subscribed = (await guild?.commands.fetch()) ?? new Collection();
 
-        const diffAdded = this.filter(
-            c => !subscribed.find(s => s.name === c.data.name),
-        );
-        const diffRemoved = subscribed.filter(
-            s => !this.find(c => s.name === c.data.name),
-        );
-        const diff = this.filter(
-            c =>
-                !(
-                    subscribed
-                        .find(s => s.name === c.data.name)
-                        ?.equals(c.data) ?? false
-                ),
-        );
+        const diffAdded = this.filter(c => !subscribed.find(s => s.name === c.data.name));
+        const diffRemoved = subscribed.filter(s => !this.find(c => s.name === c.data.name));
+        const diff = this.filter(c => !(subscribed.find(s => s.name === c.data.name)?.equals(c.data) ?? false));
 
         await Promise.allSettled([
             ...diffAdded.mapValues(add => guild?.commands.create(add.data)),
-            ...diffRemoved.mapValues(remove =>
-                guild?.commands.delete(remove.id),
-            ),
+            ...diffRemoved.mapValues(remove => guild?.commands.delete(remove.id)),
             ...diff.mapValues(change => {
-                const id = subscribed.find(
-                    s => s.name === change.data.name,
-                )?.id;
+                const id = subscribed.find(s => s.name === change.data.name)?.id;
                 if (id) return guild?.commands.edit(id, change.data);
                 return 0;
             }),

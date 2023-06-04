@@ -9,18 +9,11 @@ export default class extends ExEvent {
         });
     }
 
-    public readonly run = (
-        id: number,
-        unavailableGuilds: Set<string> | undefined,
-    ): void => {
+    public readonly run = (id: number, unavailableGuilds: Set<string> | undefined): void => {
         const unavailable = unavailableGuilds?.size ?? 0;
         this.logger.info(
             `Shard: ${id} is now ready.`,
-            unavailable === 0
-                ? ''
-                : `${unavailable} guild${
-                      unavailable === 1 ? ' is' : 's are'
-                  } unavailable Store`,
+            unavailable === 0 ? '' : `${unavailable} guild${unavailable === 1 ? ' is' : 's are'} unavailable Store`,
         );
     };
 }

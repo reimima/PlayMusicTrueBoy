@@ -16,19 +16,12 @@ export default class extends ExEvent {
         this.logger.trace('Recieved interaction event');
 
         try {
-            if (
-                interaction.type ===
-                InteractionType.ApplicationCommandAutocomplete
-            ) {
-                await this.client.commandManager
-                    .get(interaction.commandName)
-                    ?.autoCompletion(interaction);
+            if (interaction.type === InteractionType.ApplicationCommandAutocomplete) {
+                await this.client.commandManager.get(interaction.commandName)?.autoCompletion(interaction);
             }
 
             if (interaction.isChatInputCommand()) {
-                await this.client.commandManager
-                    .get(interaction.commandName)
-                    ?.run(interaction);
+                await this.client.commandManager.get(interaction.commandName)?.run(interaction);
             }
         } catch (e) {
             this.logger.error(e);
