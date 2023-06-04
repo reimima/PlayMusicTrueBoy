@@ -1,56 +1,37 @@
-import { inspect } from 'node:util';
+import { InteractionType } from 'discord.js';
+import type { Interaction } from 'discord.js';
 
-import type { BaseMessageOptions, Interaction } from 'discord.js';
-import { EmbedBuilder, formatEmoji, InteractionType } from 'discord.js';
+import type { ExClient } from '../ExClient';
+import { ExEvent } from '../interfaces';
 
-import { ExtendedEvent } from '../interface';
-import type { MusicBot } from '../MusicBot';
-
-export default class extends ExtendedEvent {
-    public constructor(client: MusicBot) {
+export default class extends ExEvent {
+    public constructor(client: ExClient) {
         super(client, {
             name: 'interactionCreate',
             once: false,
         });
     }
 
-    public override execute = async (interaction: Interaction): Promise<void> => {
+    public readonly run = async (interaction: Interaction): Promise<void> => {
+        this.logger.trace('Recieved interaction event');
+
         try {
-            if (interaction.type === InteractionType.ApplicationCommandAutocomplete) {
+            if (
+                interaction.type ===
+                InteractionType.ApplicationCommandAutocomplete
+            ) {
                 await this.client.commandManager
                     .get(interaction.commandName)
                     ?.autoCompletion(interaction);
             }
 
             if (interaction.isChatInputCommand()) {
-                await this.client.commandManager.get(interaction.commandName)?.execute(interaction);
+                await this.client.commandManager
+                    .get(interaction.commandName)
+                    ?.run(interaction);
             }
         } catch (e) {
             this.logger.error(e);
-
-            const message: BaseMessageOptions = {
-                embeds: [
-                    new EmbedBuilder()
-                        .setColor('Red')
-                        .setTitle(
-                            `${formatEmoji(
-                                this.client._emojis.zoomcat,
-                                true,
-                            )} インタラクション実行中での予期せぬエラー`,
-                        )
-                        .setDescription(
-                            inspect(e, { depth: 1, maxArrayLength: null }).substring(0, 4096),
-                        ),
-                ],
-            };
-
-            if (interaction.isChatInputCommand()) {
-                if (interaction.replied || interaction.deferred) {
-                    await interaction.followUp(message).catch(err => this.logger.error(err));
-                } else {
-                    await interaction.reply(message).catch(err => this.logger.error(err));
-                }
-            }
         }
     };
 }

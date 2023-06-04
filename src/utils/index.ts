@@ -1,3 +1,3 @@
 export * from './embedPages';
 
-export * from './Loader';
+export * from './loader';

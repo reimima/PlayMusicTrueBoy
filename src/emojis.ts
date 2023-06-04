@@ -1,9 +1,16 @@
+import { formatEmoji } from 'discord.js';
+
 export const emojis = {
-    owoSaber: '1053189215703269376',
-    shakatori: '838786519152984074',
-    321: '822877372751544320',
-    zoomcat: '813025451529207849',
-    checkyel: '810076522273964032',
-    miz: '805242658855190539',
-    org: '769523641216925717',
+    process: {
+        first: formatEmoji('1114360600735252703'),
+        previous: formatEmoji('1114360594536091778'),
+        delete: formatEmoji('1114360598621335633'),
+        next: formatEmoji('1114360596150894622'),
+        last: formatEmoji('1114360603696451645'),
+    },
+    namek: {
+        failure: formatEmoji('761875274181902336', true),
+        success: formatEmoji('810076522273964032', true),
+        loading: formatEmoji('810076530293604373', true),
+    },
 } as const;

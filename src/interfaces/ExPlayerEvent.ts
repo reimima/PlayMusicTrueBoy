@@ -1,0 +1,24 @@
+import type { GuildQueueEvents } from 'discord-player';
+import type { Logger } from 'log4js';
+import log4js from 'log4js';
+
+import type { ExClient } from '../ExClient';
+
+// eslint-disable-next-line import/no-named-as-default-member
+const { getLogger } = log4js;
+
+export abstract class ExPlayerEvent {
+    protected readonly logger: Logger;
+
+    protected constructor(
+        protected readonly client: ExClient,
+        public readonly data: {
+            name: keyof GuildQueueEvents;
+            once: boolean;
+        },
+    ) {
+        this.logger = getLogger(data.name);
+    }
+
+    public abstract run(...args: unknown[]): void;
+}

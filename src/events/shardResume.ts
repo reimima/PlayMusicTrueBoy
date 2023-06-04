@@ -4,11 +4,13 @@ import { ExEvent } from '../interfaces';
 export default class extends ExEvent {
     public constructor(client: ExClient) {
         super(client, {
-            name: 'error',
+            name: 'shardResume',
             once: false,
         });
     }
 
-    public readonly run = (error: Error): void =>
-        this.logger.error('DJS Error -', error);
+    public readonly run = (id: number, replayedEvents: number): void =>
+        this.logger.info(
+            `Shard: ${id} has resumed. Replayed: ${replayedEvents}`,
+        );
 }

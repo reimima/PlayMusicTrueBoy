@@ -1,15 +1,15 @@
-import { ExtendedPlayerEvent } from '../interface';
-import type { MusicBot } from '../MusicBot';
+import type { ExClient } from '../ExClient';
+import { ExPlayerEvent } from '../interfaces';
 
-export default class extends ExtendedPlayerEvent {
-    public constructor(client: MusicBot) {
+export default class extends ExPlayerEvent {
+    public constructor(client: ExClient) {
         super(client, {
             name: 'error',
             once: false,
         });
     }
 
-    public override execute = (error: Error): void => {
-        this.logger.error(`Dp Error - `, error);
+    public override run = (error: Error): void => {
+        this.logger.error(`DP Error -`, error);
     };
 }

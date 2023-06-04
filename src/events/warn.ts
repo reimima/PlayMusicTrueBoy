@@ -1,15 +1,14 @@
-import { ExtendedEvent } from '../interface';
-import type { MusicBot } from '../MusicBot';
+import type { ExClient } from '../ExClient';
+import { ExEvent } from '../interfaces';
 
-export default class extends ExtendedEvent {
-    public constructor(client: MusicBot) {
+export default class extends ExEvent {
+    public constructor(client: ExClient) {
         super(client, {
             name: 'warn',
             once: false,
         });
     }
 
-    public override execute = (info: string): void => {
-        this.logger.warn('Djs Warning - ', info);
-    };
+    public readonly run = (error: Error): void =>
+        this.logger.error('DJS Warning -', error);
 }

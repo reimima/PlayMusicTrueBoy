@@ -1,9 +1,9 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type {
     BaseMessageOptions,
     ButtonInteraction,
     EmbedBuilder,
     InteractionReplyOptions,
+    InteractionResponse,
 } from 'discord.js';
 import {
     ActionRowBuilder,
@@ -11,90 +11,107 @@ import {
     ButtonStyle,
     ChatInputCommandInteraction,
     ComponentType,
+    Message,
 } from 'discord.js';
 
+import type { ExClient } from '../ExClient';
+
 export const embedPages = async (
-    source: ChatInputCommandInteraction,
+    client: ExClient,
+    interaction: ChatInputCommandInteraction,
     pages: EmbedBuilder[],
     options: {
-        fromButton: boolean;
-        timeOut: number;
+        fetched: boolean;
+        timeout: number;
     },
-) => {
+): Promise<InteractionResponse | Message | undefined> => {
     const buttons = [
-            new ButtonBuilder()
-                .setCustomId('first')
-                .setLabel('⏪')
-                .setStyle(ButtonStyle.Primary)
-                .setDisabled(true),
-            new ButtonBuilder()
-                .setCustomId('previous')
-                .setLabel('◀️')
-                .setStyle(ButtonStyle.Success)
-                .setDisabled(true),
-            new ButtonBuilder()
-                .setCustomId('delete')
-                .setLabel('🗑️')
-                .setStyle(ButtonStyle.Danger)
-                .setDisabled(false),
-            new ButtonBuilder().setCustomId('next').setLabel('▶️').setStyle(ButtonStyle.Success),
-            new ButtonBuilder().setCustomId('last').setLabel('⏩').setStyle(ButtonStyle.Primary),
-        ],
-        rows = [new ActionRowBuilder<ButtonBuilder>().addComponents(buttons)];
+        new ButtonBuilder()
+            .setCustomId('first')
+            .setLabel(client._emojis.process.first)
+            .setStyle(ButtonStyle.Primary)
+            .setDisabled(true),
+        new ButtonBuilder()
+            .setCustomId('previous')
+            .setLabel(client._emojis.process.previous)
+            .setStyle(ButtonStyle.Primary)
+            .setDisabled(true),
+        new ButtonBuilder()
+            .setCustomId('delete')
+            .setLabel(client._emojis.process.delete)
+            .setStyle(ButtonStyle.Danger)
+            .setDisabled(false),
+        new ButtonBuilder()
+            .setCustomId('next')
+            .setLabel(client._emojis.process.next)
+            .setStyle(ButtonStyle.Primary),
+        new ButtonBuilder()
+            .setCustomId('last')
+            .setLabel(client._emojis.process.last)
+            .setStyle(ButtonStyle.Primary),
+    ];
+
+    const rows = [new ActionRowBuilder<ButtonBuilder>().addComponents(buttons)];
 
     let currentPage = 0;
 
-    const contents = {
+    const message = {
         embeds: [
-            pages[currentPage]?.setFooter({ text: `Page : ${currentPage + 1}/${pages.length}` }),
+            pages[currentPage]?.setFooter({
+                text: `Page : ${currentPage + 1}/${pages.length}`,
+            }),
         ],
         components: rows,
-    } as BaseMessageOptions | InteractionReplyOptions;
+    };
 
-    if (pages.length < 2) {
+    if (pages.length <= 1)
         rows[0]?.setComponents(
-            buttons[0]!.setDisabled(true),
-            buttons[1]!.setDisabled(true),
-            buttons[2]!.setDisabled(false),
-            buttons[3]!.setDisabled(true),
-            buttons[4]!.setDisabled(true),
+            buttons.map((button, index) =>
+                index === 2
+                    ? button.setDisabled(false)
+                    : button.setDisabled(true),
+            ),
         );
-    }
 
-    const sent = options.fromButton
-        ? await source.channel?.send(contents as BaseMessageOptions)
-        : await source.reply(contents as InteractionReplyOptions);
-    const fetched =
-        source instanceof ChatInputCommandInteraction && !options.fromButton
-            ? await source.fetchReply()
-            : sent;
+    const sent =
+        interaction instanceof ChatInputCommandInteraction && !options.fetched
+            ? await interaction.fetchReply()
+            : options.fetched
+            ? await interaction.channel?.send(message as BaseMessageOptions)
+            : await interaction.reply(message as InteractionReplyOptions);
+
+    if (!sent) return;
 
     const filter = (interaction: ButtonInteraction) =>
-        ['first', 'previous', 'delete', 'next', 'last'].includes(interaction.customId);
-    const collecter = fetched?.createMessageComponentCollector({
+        ['first', 'previous', 'delete', 'next', 'last'].includes(
+            interaction.customId,
+        );
+    const collecter = sent.createMessageComponentCollector({
         filter,
         componentType: ComponentType.Button,
-        time: options.timeOut,
+        time: options.timeout,
     });
 
-    const collected = source.channel?.messages.cache.get(fetched!.id);
-
-    if (!collected) return;
-
-    collecter?.on('collect', async interaction => {
+    collecter.on('collect', async interaction => {
         switch (interaction.customId) {
             case 'first':
                 currentPage = 0;
                 break;
+
             case 'previous':
-                currentPage = currentPage > 0 ? --currentPage : pages.length - 1;
+                currentPage =
+                    currentPage > 0 ? --currentPage : pages.length - 1;
                 break;
+
             case 'delete':
-                currentPage = 404;
-                break;
+                await sent.delete();
+                return;
+
             case 'next':
-                currentPage = currentPage + 1 < pages.length ? ++currentPage : 0;
+                currentPage =
+                    currentPage + 1 < pages.length ? ++currentPage : 0;
                 break;
+
             case 'last':
                 currentPage = pages.length - 1;
                 break;
@@ -103,42 +120,38 @@ export const embedPages = async (
         switch (currentPage) {
             case 0:
                 rows[0]?.setComponents(
-                    buttons[0]!.setDisabled(true),
-                    buttons[1]!.setDisabled(true),
-                    buttons[2]!.setDisabled(false),
-                    buttons[3]!.setDisabled(false),
-                    buttons[4]!.setDisabled(false),
+                    buttons.map((button, index) =>
+                        [0, 1].includes(index)
+                            ? button.setDisabled(true)
+                            : button.setDisabled(false),
+                    ),
                 );
                 break;
 
-            case 404:
-                await collected.delete();
-                return;
-
             case pages.length - 1:
                 rows[0]?.setComponents(
-                    buttons[0]!.setDisabled(false),
-                    buttons[1]!.setDisabled(false),
-                    buttons[2]!.setDisabled(false),
-                    buttons[3]!.setDisabled(true),
-                    buttons[4]!.setDisabled(true),
+                    buttons.map((button, index) =>
+                        [3, 4].includes(index)
+                            ? button.setDisabled(true)
+                            : button.setDisabled(false),
+                    ),
                 );
                 break;
 
             default:
                 rows[0]?.setComponents(
-                    buttons[0]!.setDisabled(false),
-                    buttons[1]!.setDisabled(false),
-                    buttons[2]!.setDisabled(false),
-                    buttons[3]!.setDisabled(false),
-                    buttons[4]!.setDisabled(false),
+                    buttons.map(button => button.setDisabled(false)),
                 );
                 break;
         }
 
-        await collected.edit({
+        const embed = pages[currentPage];
+
+        if (!embed) return;
+
+        await sent.edit({
             embeds: [
-                pages[currentPage]!.setFooter({
+                embed.setFooter({
                     text: `Page : ${currentPage + 1}/${pages.length}`,
                 }),
             ],
@@ -149,26 +162,29 @@ export const embedPages = async (
         await interaction.deferUpdate();
     });
 
-    collecter?.on('end', async (_, reason) => {
-        if (reason !== 'messageDelete' && collected.editable) {
+    collecter.on('end', async (_, reason) => {
+        if (
+            reason !== 'messageDelete' && sent instanceof Message
+                ? sent.editable
+                : (await sent.fetch()).editable
+        ) {
             rows[0]?.setComponents(
-                buttons[0]!.setDisabled(true),
-                buttons[1]!.setDisabled(true),
-                buttons[2]!.setDisabled(true),
-                buttons[3]!.setDisabled(true),
-                buttons[4]!.setDisabled(true),
+                buttons.map(button => button.setDisabled(true)),
             );
-            await collected
-                .edit({
-                    embeds: [
-                        pages[currentPage]!.setFooter({
-                            text: `Page : ${currentPage + 1}/${pages.length}`,
-                        }),
-                    ],
-                    components: rows,
-                })
-                .catch(e => console.error(e));
+
+            const embed = pages[currentPage];
+
+            if (!embed) return;
+
+            await sent.edit({
+                embeds: [
+                    embed.setFooter({
+                        text: `Page : ${currentPage + 1}/${pages.length}`,
+                    }),
+                ],
+                components: rows,
+            });
         }
     });
-    return collected;
+    return sent;
 };
