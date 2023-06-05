@@ -2,6 +2,7 @@ import { exit } from 'node:process';
 
 import { SpotifyExtractor, YoutubeExtractor } from '@discord-player/extractor';
 import { Player } from 'discord-player';
+import type { Message } from 'discord.js';
 import { Client, GatewayIntentBits } from 'discord.js';
 import { config } from 'dotenv';
 import log4js from 'log4js';
@@ -24,6 +25,8 @@ export class ExClient extends Client {
     public readonly commandManager: CommandManager;
 
     public readonly _emojis = emojis;
+
+    public readonly panels = new Map<string, { message: Message }>();
 
     public constructor() {
         super({
