@@ -41,8 +41,14 @@ export const embedPages = async (
             .setLabel(client._emojis.process.delete)
             .setStyle(ButtonStyle.Danger)
             .setDisabled(false),
-        new ButtonBuilder().setCustomId('next').setLabel(client._emojis.process.next).setStyle(ButtonStyle.Primary),
-        new ButtonBuilder().setCustomId('last').setLabel(client._emojis.process.last).setStyle(ButtonStyle.Primary),
+        new ButtonBuilder()
+            .setCustomId('next')
+            .setLabel(client._emojis.process.next)
+            .setStyle(ButtonStyle.Primary),
+        new ButtonBuilder()
+            .setCustomId('last')
+            .setLabel(client._emojis.process.last)
+            .setStyle(ButtonStyle.Primary),
     ];
 
     const rows = [new ActionRowBuilder<ButtonBuilder>().addComponents(buttons)];
@@ -60,7 +66,9 @@ export const embedPages = async (
 
     if (pages.length <= 1)
         rows[0]?.setComponents(
-            buttons.map((button, index) => (index === 2 ? button.setDisabled(false) : button.setDisabled(true))),
+            buttons.map((button, index) =>
+                index === 2 ? button.setDisabled(false) : button.setDisabled(true),
+            ),
         );
 
     const sent =
@@ -107,7 +115,9 @@ export const embedPages = async (
             case 0:
                 rows[0]?.setComponents(
                     buttons.map((button, index) =>
-                        [0, 1].includes(index) ? button.setDisabled(true) : button.setDisabled(false),
+                        [0, 1].includes(index)
+                            ? button.setDisabled(true)
+                            : button.setDisabled(false),
                     ),
                 );
                 break;
@@ -115,7 +125,9 @@ export const embedPages = async (
             case pages.length - 1:
                 rows[0]?.setComponents(
                     buttons.map((button, index) =>
-                        [3, 4].includes(index) ? button.setDisabled(true) : button.setDisabled(false),
+                        [3, 4].includes(index)
+                            ? button.setDisabled(true)
+                            : button.setDisabled(false),
                     ),
                 );
                 break;
@@ -143,7 +155,11 @@ export const embedPages = async (
     });
 
     collecter.on('end', async (_, reason) => {
-        if (reason !== 'messageDelete' && sent instanceof Message ? sent.editable : (await sent.fetch()).editable) {
+        if (
+            reason !== 'messageDelete' && sent instanceof Message
+                ? sent.editable
+                : (await sent.fetch()).editable
+        ) {
             rows[0]?.setComponents(buttons.map(button => button.setDisabled(true)));
 
             const embed = pages[currentPage];

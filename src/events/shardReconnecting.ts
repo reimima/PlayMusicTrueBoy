@@ -9,5 +9,6 @@ export default class extends ExEvent {
         });
     }
 
-    public readonly run = (id: number): void => this.logger.info(`Shard: ${id} is now reconnecting.`);
+    public readonly run = (id: number): void =>
+        this.logger.info(`Shard: ${id} is now reconnecting.`);
 }

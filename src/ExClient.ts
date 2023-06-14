@@ -2,7 +2,7 @@ import { exit } from 'node:process';
 
 import { SpotifyExtractor, YoutubeExtractor } from '@discord-player/extractor';
 import { Player } from 'discord-player';
-import type { Message } from 'discord.js';
+import type { Message, User } from 'discord.js';
 import { Client, GatewayIntentBits } from 'discord.js';
 import { config } from 'dotenv';
 import log4js from 'log4js';
@@ -23,6 +23,8 @@ export class ExClient extends Client {
     public readonly player: Player;
 
     public readonly commandManager: CommandManager;
+
+    public readonly developer = this.users.cache.get(process.env['DEVELOPER_ID'] ?? '') as User;
 
     public readonly _emojis = emojis;
 
@@ -74,16 +76,23 @@ export class ExClient extends Client {
     };
 
     private readonly loadEvents = async (): Promise<void> =>
-        (await loadModules<ExEvent>(this, [`${__dirname(import.meta.url)}/events/**/*.ts`])).forEach(event => {
+        (
+            await loadModules<ExEvent>(this, [`${__dirname(import.meta.url)}/events/**/*.ts`])
+        ).forEach(event => {
             this[event.data.once ? 'once' : 'on'](event.data.name, event.run.bind(this));
         });
 
     private readonly loadPlayerEvents = async (): Promise<void> =>
-        (await loadModules<ExPlayerEvent>(this, [`${__dirname(import.meta.url)}/player-events/**/*.ts`])).forEach(
-            event => {
-                this.player.events[event.data.once ? 'once' : 'on'](event.data.name, event.run.bind(this));
-            },
-        );
+        (
+            await loadModules<ExPlayerEvent>(this, [
+                `${__dirname(import.meta.url)}/player-events/**/*.ts`,
+            ])
+        ).forEach(event => {
+            this.player.events[event.data.once ? 'once' : 'on'](
+                event.data.name,
+                event.run.bind(this),
+            );
+        });
 
     private readonly loadCommands = async (): Promise<void> =>
         await this.commandManager

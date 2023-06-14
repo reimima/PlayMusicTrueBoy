@@ -25,7 +25,10 @@ export class CommandManager extends Collection<string, ExCommand> {
     public readonly registerAll = async (paths: string[]): Promise<void> => {
         (await loadModules<ExCommand>(this.client, paths)).forEach(command => {
             if (this.has(command.data.name))
-                this.logger.error(`Failed to register ${command.data.name} `, `${command.data.name} is used`);
+                this.logger.error(
+                    `Failed to register ${command.data.name} `,
+                    `${command.data.name} is used`,
+                );
 
             this.set(command.data.name, command);
         });
@@ -39,7 +42,9 @@ export class CommandManager extends Collection<string, ExCommand> {
 
         const diffAdded = this.filter(c => !subscribed.find(s => s.name === c.data.name));
         const diffRemoved = subscribed.filter(s => !this.find(c => s.name === c.data.name));
-        const diff = this.filter(c => !(subscribed.find(s => s.name === c.data.name)?.equals(c.data) ?? false));
+        const diff = this.filter(
+            c => !(subscribed.find(s => s.name === c.data.name)?.equals(c.data) ?? false),
+        );
 
         await Promise.allSettled([
             ...diffAdded.mapValues(add => guild?.commands.create(add.data)),

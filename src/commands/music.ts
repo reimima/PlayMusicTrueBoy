@@ -4,6 +4,7 @@ import type { GuildQueue } from 'discord-player';
 import { QueryType, QueueRepeatMode, useTimeline } from 'discord-player';
 import type {
     AutocompleteInteraction,
+    ButtonInteraction,
     ChatInputCommandInteraction,
     Guild,
     GuildMember,
@@ -11,11 +12,19 @@ import type {
     TextBasedChannel,
     VoiceChannel,
 } from 'discord.js';
-import { ActionRowBuilder, ApplicationCommandOptionType, ButtonBuilder, ButtonStyle, EmbedBuilder } from 'discord.js';
+import {
+    ActionRowBuilder,
+    ApplicationCommandOptionType,
+    ButtonBuilder,
+    ButtonStyle,
+    ComponentType,
+    EmbedBuilder,
+} from 'discord.js';
 
 import type { ExClient } from '../ExClient';
 import { ExCommand } from '../interfaces';
-import { createShortUrl, undoShortUrl } from '../utils';
+import { MusicManager } from '../managers';
+import { createShortUrl, delayDelete, undoShortUrl } from '../utils';
 
 export default class extends ExCommand {
     private queue!: GuildQueue<{
@@ -26,9 +35,13 @@ export default class extends ExCommand {
 
     private channel!: TextBasedChannel;
 
+    private message!: Message;
+
     private readonly embed: EmbedBuilder;
 
     private readonly rows: ActionRowBuilder<ButtonBuilder>[];
+
+    private readonly cooldown = new Set();
 
     public constructor(client: ExClient) {
         super(client, {
@@ -47,7 +60,8 @@ export default class extends ExCommand {
 
         this.embed = new EmbedBuilder().setColor('Purple').setAuthor({
             name: '🎶 Now Playing...',
-            iconURL: 'https://cdn.discordapp.com/attachments/1108758787357155450/1109823030642876416/cd-loop.gif',
+            iconURL:
+                'https://cdn.discordapp.com/attachments/1108758787357155450/1109823030642876416/cd-loop.gif',
         });
 
         this.rows = [
@@ -117,32 +131,42 @@ export default class extends ExCommand {
         ];
     }
 
-    public override readonly run = async (interaction: ChatInputCommandInteraction): Promise<Message | void> => {
+    public override readonly run = async (
+        interaction: ChatInputCommandInteraction,
+    ): Promise<Message | Promise<Message>[] | void> => {
         await interaction.deferReply();
 
         if (!(await interaction.guild?.members.fetch(interaction.user.id))?.voice.channel)
-            return interaction.followUp({
-                embeds: [
-                    new EmbedBuilder()
-                        .setColor('Red')
-                        .setTitle(`${this.client._emojis.namek.failure} No user in voice channel.`)
-                        .setDescription('ボイスチャンネルに接続した状態で行ってください。'),
-                ],
-            });
+            return interaction
+                .followUp({
+                    embeds: [
+                        new EmbedBuilder()
+                            .setColor('Red')
+                            .setTitle(
+                                `${this.client._emojis.namek.failure} No user in voice channel.`,
+                            )
+                            .setDescription('ボイスチャンネルに接続した状態で行ってください。'),
+                    ],
+                })
+                .then(message => delayDelete(3, message));
 
         if (
             (await interaction.guild?.members.fetch(interaction.user.id))?.voice.channel !==
                 interaction.guild?.members.me?.voice.channel &&
             interaction.guild?.members.me?.voice.channel?.joinable
         )
-            return interaction.followUp({
-                embeds: [
-                    new EmbedBuilder()
-                        .setColor('Red')
-                        .setTitle(`${this.client._emojis.namek.failure} User doesn't join same channel.`)
-                        .setDescription('ボットと同じボイスチャンネルに接続してください。'),
-                ],
-            });
+            return interaction
+                .followUp({
+                    embeds: [
+                        new EmbedBuilder()
+                            .setColor('Red')
+                            .setTitle(
+                                `${this.client._emojis.namek.failure} User doesn't join same channel.`,
+                            )
+                            .setDescription('ボットと同じボイスチャンネルに接続してください。'),
+                    ],
+                })
+                .then(message => delayDelete(3, message));
 
         let song = interaction.options.get('song')?.value;
 
@@ -163,14 +187,18 @@ export default class extends ExCommand {
         });
 
         if (!result.tracks.length)
-            return interaction.followUp({
-                embeds: [
-                    new EmbedBuilder()
-                        .setColor('Red')
-                        .setTitle(`${this.client._emojis.namek.failure} Search results could not be found.`)
-                        .setDescription('貴方のための最高の音楽を見つけられませんでした。'),
-                ],
-            });
+            return interaction
+                .followUp({
+                    embeds: [
+                        new EmbedBuilder()
+                            .setColor('Red')
+                            .setTitle(
+                                `${this.client._emojis.namek.failure} Search results could not be found.`,
+                            )
+                            .setDescription('貴方のための最高の音楽を見つけられませんでした。'),
+                    ],
+                })
+                .then(message => delayDelete(3, message));
 
         const guild = interaction.guild;
         const channel = interaction.channel;
@@ -205,23 +233,29 @@ export default class extends ExCommand {
 
             queue.delete();
 
-            return interaction.followUp({
-                embeds: [
-                    new EmbedBuilder()
-                        .setColor('Red')
-                        .setTitle(`${this.client._emojis.namek.failure} Where Are you?`)
-                        .setDescription('貴方の居場所が見つかりませんでした、権限を確認してみてください。'),
-                ],
-            });
+            return interaction
+                .followUp({
+                    embeds: [
+                        new EmbedBuilder()
+                            .setColor('Red')
+                            .setTitle(`${this.client._emojis.namek.failure} Where Are you?`)
+                            .setDescription(
+                                '貴方の居場所が見つかりませんでした、権限を確認してみてください。',
+                            ),
+                    ],
+                })
+                .then(message => delayDelete(3, message));
         }
 
         await interaction
             .followUp({
                 embeds: [
                     new EmbedBuilder()
-                        .setColor('Default')
+                        .setColor('DarkPurple')
                         .setTitle(`${this.client._emojis.namek.loading} Loading music...`)
-                        .setDescription(`\`${result.playlist ? 'playlist' : 'track'}\` を読み込んでいます...`),
+                        .setDescription(
+                            `\`${result.playlist ? 'playlist' : 'track'}\` を読み込んでいます...`,
+                        ),
                 ],
             })
             .then(async message => {
@@ -238,18 +272,22 @@ export default class extends ExCommand {
             .catch(e => this.logger.error(e));
     };
 
-    private readonly showMusicPanel = async (interaction: ChatInputCommandInteraction): Promise<Message | void> => {
+    private readonly showMusicPanel = async (
+        interaction: ChatInputCommandInteraction,
+    ): Promise<Message | Promise<Message>[] | void> => {
         const queue = this.client.player.queues.get(this.guild);
 
         if (!queue?.isPlaying())
-            return interaction.followUp({
-                embeds: [
-                    new EmbedBuilder()
-                        .setColor('Red')
-                        .setTitle(`${this.client._emojis.namek.failure} No music is playing...`)
-                        .setDescription('あなたが求める最高の音楽が流れていません。'),
-                ],
-            });
+            return interaction
+                .followUp({
+                    embeds: [
+                        new EmbedBuilder()
+                            .setColor('Red')
+                            .setTitle(`${this.client._emojis.namek.failure} No music is playing...`)
+                            .setDescription('あなたが求める最高の音楽が流れていません。'),
+                    ],
+                })
+                .then(message => delayDelete(3, message));
 
         this.queue = queue as GuildQueue<{ channel: TextBasedChannel | null }>;
 
@@ -257,7 +295,7 @@ export default class extends ExCommand {
 
         if (!track) return;
 
-        const message = await interaction.followUp({
+        const message = (this.message = await interaction.followUp({
             embeds: [
                 this.embed
                     .setTitle(track.title)
@@ -291,11 +329,16 @@ export default class extends ExCommand {
                     )
                     .setThumbnail(track.thumbnail)
                     .setFooter({
-                        text: `${track.requestedBy?.tag ?? 'N/A'} によってリクエストされました`,
+                        text: `${
+                            track.requestedBy?.username ?? 'N/A'
+                        } によってリクエストされました`,
                         iconURL: track.requestedBy?.avatarURL() ?? 'N/A',
                     }),
             ],
-        });
+            components: this.rows,
+        }));
+
+        this.readyMusicPanel(interaction);
 
         this.client.panels.set(this.channel.id, { message });
 
@@ -322,7 +365,104 @@ export default class extends ExCommand {
         }
     };
 
-    public override readonly autoCompletion = async (interaction: AutocompleteInteraction): Promise<void> => {
+    private readonly readyMusicPanel = (interaction: ChatInputCommandInteraction): void => {
+        const collector = this.message.createMessageComponentCollector({
+            componentType: ComponentType.Button,
+            filter: (pressed: ButtonInteraction): boolean =>
+                pressed.user.id.includes(interaction.user.id),
+        });
+
+        collector.on('collect', async collected => this.controlMusicPanel(collected));
+    };
+
+    private readonly controlMusicPanel = async (interaction: ButtonInteraction): Promise<void> => {
+        await interaction.deferReply();
+
+        if (this.cooldown.has(interaction.user.id)) {
+            await interaction
+                .followUp({
+                    embeds: [
+                        new EmbedBuilder()
+                            .setColor('Red')
+                            .setTitle(
+                                `${this.client._emojis.namek.failure} The button is on cooldown.`,
+                            )
+                            .setDescription('ボタンは現在クールダウン中です。'),
+                    ],
+                })
+                .then(message => delayDelete(3, message));
+            return;
+        }
+
+        this.cooldown.add(interaction.user.id);
+        setTimeout(() => this.cooldown.delete(interaction.user.id), 3000);
+
+        const musicManager = new MusicManager(
+            this.client,
+            interaction,
+            this.rows,
+            this.queue,
+            this.message,
+        );
+
+        try {
+            switch (interaction.customId) {
+                case 'volume_down':
+                    await musicManager.volumeDown();
+                    break;
+
+                case 'back_track':
+                    await musicManager.backTrack();
+                    break;
+
+                case 'toggle_track_state':
+                    await musicManager.toggleTrackState();
+                    break;
+
+                // [1]
+                case 'skip_track': {
+                    const skiped = this.queue.node.skip();
+
+                    break;
+                }
+
+                case 'volume_up':
+                    break;
+
+                case 'shuffle_queue':
+                    break;
+
+                case 'loop_mode':
+                    break;
+
+                case 'stop_track':
+                    break;
+
+                case 'toggle_autoplay':
+                    break;
+
+                case 'show_playlist':
+                    break;
+            }
+        } catch (e) {
+            this.logger.error(e);
+
+            await interaction.followUp({
+                embeds: [
+                    new EmbedBuilder()
+                        .setColor('Red')
+                        .setTitle(`${this.client._emojis.namek.failure} Unknown error`)
+                        .setDescription(
+                            `予期せぬエラーが発生しました。 ${this.client.developer.toString()} にメンションしてください。`,
+                        ),
+                ],
+            });
+        }
+    };
+
+    public override readonly autoCompletion = async (
+        interaction: AutocompleteInteraction,
+    ): Promise<void> => {
         const song = interaction.options.get('song')?.value;
 
         if (typeof song !== 'string') return;

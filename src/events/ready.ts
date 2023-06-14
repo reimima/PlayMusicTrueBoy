@@ -13,7 +13,11 @@ export default class extends ExEvent {
 
     public readonly run = async (client: Client<true>): Promise<void> => {
         this.logger.info('Succesfully logged in and is Ready.');
-        this.logger.trace(`Cached ${this.client.guilds.cache.size} guild${client.guilds.cache.size <= 1 ? '' : 's'}`);
+        this.logger.trace(
+            `Cached ${this.client.guilds.cache.size} guild${
+                client.guilds.cache.size <= 1 ? '' : 's'
+            }`,
+        );
 
         client.user.setPresence({
             status: 'idle',

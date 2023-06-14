@@ -17,7 +17,9 @@ export default class extends ExEvent {
 
         try {
             if (interaction.type === InteractionType.ApplicationCommandAutocomplete) {
-                await this.client.commandManager.get(interaction.commandName)?.autoCompletion(interaction);
+                await this.client.commandManager
+                    .get(interaction.commandName)
+                    ?.autoCompletion(interaction);
             }
 
             if (interaction.isChatInputCommand()) {

@@ -22,7 +22,9 @@ export const loadModules = async <T>(client: ExClient, paths: string[]): Promise
 
     return Promise.all(
         files.map(file =>
-            import(file).then((i: { default: new (_client: ExClient) => Promise<T> }) => new i.default(client)),
+            import(file).then(
+                (i: { default: new (_client: ExClient) => Promise<T> }) => new i.default(client),
+            ),
         ),
     );
 };
