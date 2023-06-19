@@ -1,4 +1,4 @@
-import { type GuildQueue } from 'discord-player';
+import { type GuildQueue, QueueRepeatMode } from 'discord-player';
 import { ButtonStyle, EmbedBuilder } from 'discord.js';
 import type {
     ActionRowBuilder,
@@ -61,7 +61,7 @@ export class MusicManager {
         return delayDelete(3, success);
     };
 
-    public readonly backTrack = async () => {
+    public readonly backTrack = async (): Promise<Promise<Message>[]> => {
         if (!(this.queue.history.tracks.size > 0)) {
             const failure = await this.interaction.followUp({
                 embeds: [
@@ -93,7 +93,7 @@ export class MusicManager {
         return delayDelete(3, success);
     };
 
-    public readonly toggleTrackState = async () => {
+    public readonly toggleTrackState = async (): Promise<Message> => {
         if (!this.queue.node.isPaused()) {
             this.queue.node.setPaused(true);
 
@@ -139,5 +139,116 @@ export class MusicManager {
             .setStyle(ButtonStyle.Primary);
 
         return this.message.edit({ components: this.rows });
+    };
+
+    public readonly volumeUp = async (): Promise<Promise<Message>[]> => {
+        const beforeVolume = this.queue.node.volume;
+
+        if (beforeVolume >= 100) {
+            const failure = await this.interaction.followUp({
+                embeds: [
+                    new EmbedBuilder()
+                        .setColor('Red')
+                        .setTitle(
+                            `${this.client._emojis.namek.failure} Volume is already above 100%`,
+                        )
+                        .setDescription('ボリュームはすでに `100%` です。'),
+                ],
+            });
+
+            return delayDelete(3, failure);
+        }
+
+        this.queue.node.setVolume(beforeVolume + 10);
+
+        const success = await this.interaction.followUp({
+            embeds: [
+                new EmbedBuilder()
+                    .setColor('DarkPurple')
+                    .setTitle(
+                        `${this.client._emojis.namek.success} Changed the volume to \`${this.queue.node.volume}%\`!`,
+                    )
+                    .setDescription(`ボリュームを \`${this.queue.node.volume}%\` にしました！`),
+            ],
+        });
+
+        return delayDelete(3, success);
+    };
+
+    public readonly shuffleQueue = async (): Promise<Promise<Message>[]> => {
+        this.queue.tracks.shuffle();
+
+        return this.interaction
+            .followUp({
+                embeds: [
+                    new EmbedBuilder()
+                        .setColor('DarkPurple')
+                        .setTitle(`${this.client._emojis.namek.success} Shuffle successfully!`)
+                        .setDescription('キュー内のシャッフルに成功しました！'),
+                ],
+            })
+            .then(message => delayDelete(3, message));
+    };
+
+    public readonly loopMode = async (): Promise<Promise<Message>[]> => {
+        switch (this.queue.repeatMode) {
+            case QueueRepeatMode.OFF:
+                this.queue.setRepeatMode(QueueRepeatMode.TRACK);
+                break;
+
+            case QueueRepeatMode.TRACK:
+                this.queue.setRepeatMode(QueueRepeatMode.QUEUE);
+                break;
+
+            case QueueRepeatMode.QUEUE:
+                this.queue.setRepeatMode(QueueRepeatMode.OFF);
+                break;
+        }
+
+        const message = `${
+            this.queue.repeatMode === QueueRepeatMode.OFF
+                ? 'off'
+                : this.queue.repeatMode === QueueRepeatMode.TRACK
+                ? 'track'
+                : this.queue.repeatMode === QueueRepeatMode.QUEUE
+                ? 'queue'
+                : 'N/A'
+        }`;
+
+        return this.interaction
+            .followUp({
+                embeds: [
+                    new EmbedBuilder()
+                        .setColor('DarkPurple')
+                        .setTitle(
+                            `${this.client._emojis.namek.success} Change loop mode to \`${message}\`.`,
+                        )
+                        .setDescription(`ループモードを \`${message}\` に変更しました！`),
+                ],
+            })
+            .then(message => delayDelete(3, message));
+    };
+
+    public readonly stopTrack = async (): Promise<Promise<Message>[]> => {
+        const joinedChannel = this.interaction.guild?.members.me?.voice.channel;
+
+        return this.queue.player.destroy().then(() =>
+            this.interaction
+                .followUp({
+                    embeds: [
+                        new EmbedBuilder()
+                            .setColor('DarkPurple')
+                            .setTitle(
+                                `${this.client._emojis.namek.success} Bot has left by ${
+                                    joinedChannel?.name ?? 'N/A'
+                                }.`,
+                            )
+                            .setDescription(
+                                `${joinedChannel?.toString() ?? 'N/A'} から退出しました！`,
+                            ),
+                    ],
+                })
+                .then(message => delayDelete(3, message)),
+        );
     };
 }

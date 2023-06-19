@@ -1,7 +1,7 @@
 import { setTimeout as sleep } from 'node:timers/promises';
 
-import type { GuildQueue } from 'discord-player';
 import { QueryType, QueueRepeatMode, useTimeline } from 'discord-player';
+import type { GuildQueue, Track } from 'discord-player';
 import type {
     AutocompleteInteraction,
     ButtonInteraction,
@@ -342,27 +342,7 @@ export default class extends ExCommand {
 
         this.client.panels.set(this.channel.id, { message });
 
-        while (queue.isPlaying()) {
-            await sleep(3000);
-
-            const panel = this.client.panels.get(this.channel.id);
-            const fields = this.embed.data.fields;
-
-            if (!panel || !fields) return;
-
-            fields[2] = {
-                name: '再生時間',
-                value: `${this.queue.node.createProgressBar() ?? 'N/A'} (${
-                    useTimeline(this.guild)?.timestamp.progress ?? 'N/A'
-                }%)`,
-            };
-
-            await panel.message.edit({
-                embeds: [this.embed],
-            });
-
-            if (!queue.isPlaying()) break;
-        }
+        await this.updateMusicPanelTimeline().catch(e => this.logger.error(e));
     };
 
     private readonly readyMusicPanel = (interaction: ChatInputCommandInteraction): void => {
@@ -419,23 +399,51 @@ export default class extends ExCommand {
                     await musicManager.toggleTrackState();
                     break;
 
-                // [1]
+                // [1] If this case in MusicManager prototype, the func need many args. So only skip doesn't use MusicManager.
                 case 'skip_track': {
-                    const skiped = this.queue.node.skip();
+                    this.queue.node.skip();
 
+                    await interaction
+                        .followUp({
+                            embeds: [
+                                new EmbedBuilder()
+                                    .setColor('DarkPurple')
+                                    .setTitle(
+                                        `${this.client._emojis.namek.success} Skip successfully!`,
+                                    )
+                                    .setDescription(
+                                        `\`${
+                                            this.queue.currentTrack?.title ?? 'N/A'
+                                        }\` のスキップに成功しました！`,
+                                    ),
+                            ],
+                        })
+                        .then(message => delayDelete(3, message));
+
+                    try {
+                        await this.updateMusicPanelInfomation(this.queue.currentTrack).then(() =>
+                            this.updateMusicPanelTimeline(),
+                        );
+                    } catch (e) {
+                        this.logger.error(e);
+                    }
                     break;
                 }
 
                 case 'volume_up':
+                    await musicManager.volumeUp();
                     break;
 
                 case 'shuffle_queue':
+                    await musicManager.shuffleQueue();
                     break;
 
                 case 'loop_mode':
+                    await musicManager.loopMode();
                     break;
 
                 case 'stop_track':
+                    await musicManager.stopTrack();
                     break;
 
                 case 'toggle_autoplay':
@@ -457,6 +465,76 @@ export default class extends ExCommand {
                         ),
                 ],
             });
+        }
+    };
+
+    private readonly updateMusicPanelInfomation = async (track: Track | null): Promise<void> => {
+        const panel = this.client.panels.get(this.channel.id);
+
+        if (!panel || !track) return;
+
+        this.embed
+            .setTitle(track.title)
+            .setURL(track.url)
+            .setDescription(`_${track.author}_`)
+            .setFields(
+                {
+                    name: 'プレイヤー',
+                    value: `**${this.queue.tracks.size}曲**`,
+                    inline: true,
+                },
+                {
+                    name: 'ループモード',
+                    value: `\`${
+                        this.queue.repeatMode === QueueRepeatMode.OFF
+                            ? 'off'
+                            : this.queue.repeatMode === QueueRepeatMode.TRACK
+                            ? 'track'
+                            : this.queue.repeatMode === QueueRepeatMode.QUEUE
+                            ? 'queue'
+                            : 'autoplay'
+                    }\``,
+                    inline: true,
+                },
+                {
+                    name: '再生時間',
+                    value: `${this.queue.node.createProgressBar() ?? 'N/A'} (${
+                        useTimeline(this.guild)?.timestamp.progress ?? 'N/A'
+                    }%)`,
+                },
+            )
+            .setThumbnail(track.thumbnail)
+            .setFooter({
+                text: `${track.requestedBy?.username ?? 'N/A'} によってリクエストされました`,
+                iconURL: track.requestedBy?.avatarURL() ?? 'N/A',
+            });
+
+        await panel.message.edit({
+            embeds: [this.embed],
+        });
+    };
+
+    private readonly updateMusicPanelTimeline = async (): Promise<void> => {
+        while (this.queue.isPlaying()) {
+            await sleep(3000);
+
+            const panel = this.client.panels.get(this.channel.id);
+            const fields = this.embed.data.fields;
+
+            if (!panel || !fields) return;
+
+            fields[2] = {
+                name: '再生時間',
+                value: `${this.queue.node.createProgressBar() ?? 'N/A'} (${
+                    useTimeline(this.guild)?.timestamp.progress ?? 'N/A'
+                }%)`,
+            };
+
+            await panel.message.edit({
+                embeds: [this.embed],
+            });
+
+            if (!this.queue.isPlaying()) break;
         }
     };
 
