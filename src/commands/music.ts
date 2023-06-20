@@ -260,15 +260,6 @@ export default class extends ExCommand {
 
                 queue.addTrack(result.playlist ? result.tracks : track);
 
-                await interaction.followUp({
-                    embeds: [
-                        new EmbedBuilder()
-                            .setColor('DarkPurple')
-                            .setTitle(`${this.client._emojis.namek.success} New music added!`)
-                            .setDescription(`\`${track.title}\` をキューに追加しました！`),
-                    ],
-                });
-
                 if (!queue.isPlaying()) await queue.node.play();
 
                 await message.delete();

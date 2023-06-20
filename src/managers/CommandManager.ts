@@ -36,7 +36,7 @@ export class CommandManager extends Collection<string, ExCommand> {
 
     public readonly subscribe = async (): Promise<void> => {
         /** @access This server id from Namek. If you want to access to dev server, you should change this id to 1075366696220626965 */
-        const guild = this.client.guilds.cache.get('1075366696220626965');
+        const guild = this.client.guilds.cache.get('705003456984907786');
 
         const subscribed = (await guild?.commands.fetch()) ?? new Collection();
 
