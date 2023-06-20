@@ -1,4 +1,5 @@
-import { type GuildQueue, QueueRepeatMode } from 'discord-player';
+import { QueueRepeatMode } from 'discord-player';
+import type { GuildQueue, Track } from 'discord-player';
 import { ButtonStyle, EmbedBuilder } from 'discord.js';
 import type {
     ActionRowBuilder,
@@ -7,27 +8,18 @@ import type {
     Message,
     TextBasedChannel,
 } from 'discord.js';
-import type { Logger } from 'log4js';
-import log4js from 'log4js';
 
 import type { ExClient } from '../ExClient';
-import { delayDelete } from '../utils';
-
-// eslint-disable-next-line import/no-named-as-default-member
-const { getLogger } = log4js;
+import { delayDelete, embedPages } from '../utils';
 
 export class MusicManager {
-    private readonly logger: Logger;
-
     public constructor(
         private readonly client: ExClient,
         private readonly interaction: ButtonInteraction,
         private readonly rows: ActionRowBuilder<ButtonBuilder>[],
         private readonly queue: GuildQueue<{ channel: TextBasedChannel | null }>,
         private readonly message: Message,
-    ) {
-        this.logger = getLogger('MusicManager');
-    }
+    ) {}
 
     public readonly volumeDown = async (): Promise<Promise<Message>[]> => {
         const beforeVolume = this.queue.node.volume;
@@ -141,6 +133,25 @@ export class MusicManager {
         return this.message.edit({ components: this.rows });
     };
 
+    public readonly skipTrack = async (): Promise<Promise<Message>[]> => {
+        this.queue.node.skip();
+
+        return this.interaction
+            .followUp({
+                embeds: [
+                    new EmbedBuilder()
+                        .setColor('DarkPurple')
+                        .setTitle(`${this.client._emojis.namek.success} Skip successfully!`)
+                        .setDescription(
+                            `\`${
+                                this.queue.currentTrack?.title ?? 'N/A'
+                            }\` のスキップに成功しました！`,
+                        ),
+                ],
+            })
+            .then(message => delayDelete(3, message));
+    };
+
     public readonly volumeUp = async (): Promise<Promise<Message>[]> => {
         const beforeVolume = this.queue.node.volume;
 
@@ -201,6 +212,10 @@ export class MusicManager {
                 break;
 
             case QueueRepeatMode.QUEUE:
+                this.queue.setRepeatMode(QueueRepeatMode.AUTOPLAY);
+                break;
+
+            case QueueRepeatMode.AUTOPLAY:
                 this.queue.setRepeatMode(QueueRepeatMode.OFF);
                 break;
         }
@@ -212,7 +227,7 @@ export class MusicManager {
                 ? 'track'
                 : this.queue.repeatMode === QueueRepeatMode.QUEUE
                 ? 'queue'
-                : 'N/A'
+                : 'autoplay'
         }`;
 
         return this.interaction
@@ -250,5 +265,66 @@ export class MusicManager {
                 })
                 .then(message => delayDelete(3, message)),
         );
+    };
+
+    public readonly showPlaylist = () => {
+        const track = this.queue.currentTrack;
+        const tracks = this.queue.tracks.map(
+            (m, i) => `${i + 1}. [**[${m.author}] ${m.title}**](${m.url})`,
+        );
+        const individualTracks = ((tracks: string[]): string[][] =>
+            new Array(Math.ceil(tracks.length / 20))
+                .fill(tracks)
+                .map((_, i) => tracks.slice(i * 20, (i + 1) * 20)))(tracks);
+
+        if (!track) return;
+
+        const embeds = ((nowPlaying: Track, tracks: string[][]): EmbedBuilder[] => {
+            const embeds: EmbedBuilder[] = [];
+
+            for (let index = tracks.length; ; index--) {
+                if (tracks.length < 1) {
+                    embeds.push(
+                        new EmbedBuilder()
+                            .setColor('DarkPurple')
+                            .setTitle(`**[${nowPlaying.author}] ${nowPlaying.title}**`)
+                            .setURL(nowPlaying.url),
+                    );
+                    return embeds;
+                }
+
+                tracks.map(track =>
+                    embeds.push(
+                        new EmbedBuilder()
+                            .setColor('DarkPurple')
+                            .setTitle(`**[${nowPlaying.author}] ${nowPlaying.title}**`)
+                            .setURL(nowPlaying.url)
+                            .setDescription(`${track.join('\n')}`),
+                    ),
+                );
+
+                if (index < 2) break;
+            }
+
+            return embeds;
+        })(track, individualTracks);
+
+        return this.interaction
+            .followUp({
+                embeds: [
+                    new EmbedBuilder()
+                        .setColor('DarkPurple')
+                        .setTitle(`${this.client._emojis.namek.loading} Loading queue...`)
+                        .setDescription('キューを読み込んでいます...'),
+                ],
+            })
+            .then(async message => {
+                await message.delete();
+                await embedPages(this.client, this.interaction, embeds, {
+                    replied: true,
+                    ephemeral: true,
+                    timeout: 60000,
+                });
+            });
     };
 }

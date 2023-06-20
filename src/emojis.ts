@@ -2,11 +2,11 @@ import { formatEmoji } from 'discord.js';
 
 export const emojis = {
     process: {
-        first: formatEmoji('1114360600735252703'),
-        previous: formatEmoji('1114360594536091778'),
-        delete: formatEmoji('1114360598621335633'),
-        next: formatEmoji('1114360596150894622'),
-        last: formatEmoji('1114360603696451645'),
+        first: '1114360600735252703',
+        previous: '1114360594536091778',
+        delete: '1114360598621335633',
+        next: '1114360596150894622',
+        last: '1114360603696451645',
     },
     namek: {
         failure: formatEmoji('761875274181902336', true),

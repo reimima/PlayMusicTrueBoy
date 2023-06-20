@@ -2,8 +2,8 @@ import { exit } from 'node:process';
 
 import { SpotifyExtractor, YoutubeExtractor } from '@discord-player/extractor';
 import { Player } from 'discord-player';
-import type { Message, User } from 'discord.js';
-import { Client, GatewayIntentBits } from 'discord.js';
+import type { Message } from 'discord.js';
+import { Client, EmbedBuilder, GatewayIntentBits } from 'discord.js';
 import { config } from 'dotenv';
 import log4js from 'log4js';
 
@@ -24,11 +24,13 @@ export class ExClient extends Client {
 
     public readonly commandManager: CommandManager;
 
-    public readonly developer = this.users.cache.get(process.env['DEVELOPER_ID'] ?? '') as User;
+    public readonly developer = this.users.cache.get(process.env['DEVELOPER_ID'] ?? '');
 
     public readonly _emojis = emojis;
 
     public readonly panels = new Map<string, { message: Message }>();
+
+    public globalEmbed = new EmbedBuilder();
 
     public constructor() {
         super({
@@ -113,11 +115,11 @@ export class ExClient extends Client {
             .on('debug', message => this.logger.debug(`DP raw debug -`, message))
             .on('error', error => this.logger.error('DP raw error -', error));
 
-    public readonly shutdown = (): void => {
+    public readonly shutdown = async (): Promise<void> => {
         this.logger.info('Shutting down...');
 
         this.removeAllListeners();
-        this.destroy();
+        await this.destroy();
         exit();
     };
 }

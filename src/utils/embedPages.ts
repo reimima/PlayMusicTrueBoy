@@ -1,5 +1,4 @@
 import type {
-    BaseMessageOptions,
     ButtonInteraction,
     EmbedBuilder,
     InteractionReplyOptions,
@@ -18,37 +17,35 @@ import type { ExClient } from '../ExClient';
 
 export const embedPages = async (
     client: ExClient,
-    interaction: ChatInputCommandInteraction,
+    interaction: ButtonInteraction | ChatInputCommandInteraction,
     pages: EmbedBuilder[],
     options: {
-        fetched: boolean;
+        replied: boolean;
+        ephemeral: boolean;
         timeout: number;
     },
 ): Promise<InteractionResponse | Message | undefined> => {
     const buttons = [
         new ButtonBuilder()
             .setCustomId('first')
-            .setLabel(client._emojis.process.first)
+            .setEmoji(client._emojis.process.first)
             .setStyle(ButtonStyle.Primary)
             .setDisabled(true),
         new ButtonBuilder()
             .setCustomId('previous')
-            .setLabel(client._emojis.process.previous)
+            .setEmoji(client._emojis.process.previous)
             .setStyle(ButtonStyle.Primary)
             .setDisabled(true),
         new ButtonBuilder()
-            .setCustomId('delete')
-            .setLabel(client._emojis.process.delete)
-            .setStyle(ButtonStyle.Danger)
-            .setDisabled(false),
-        new ButtonBuilder()
             .setCustomId('next')
-            .setLabel(client._emojis.process.next)
-            .setStyle(ButtonStyle.Primary),
+            .setEmoji(client._emojis.process.next)
+            .setStyle(ButtonStyle.Primary)
+            .setDisabled(true),
         new ButtonBuilder()
             .setCustomId('last')
-            .setLabel(client._emojis.process.last)
-            .setStyle(ButtonStyle.Primary),
+            .setEmoji(client._emojis.process.last)
+            .setStyle(ButtonStyle.Primary)
+            .setDisabled(true),
     ];
 
     const rows = [new ActionRowBuilder<ButtonBuilder>().addComponents(buttons)];
@@ -62,26 +59,18 @@ export const embedPages = async (
             }),
         ],
         components: rows,
-    };
-
-    if (pages.length <= 1)
-        rows[0]?.setComponents(
-            buttons.map((button, index) =>
-                index === 2 ? button.setDisabled(false) : button.setDisabled(true),
-            ),
-        );
+        ephemeral: options.ephemeral,
+    } as InteractionReplyOptions;
 
     const sent =
-        interaction instanceof ChatInputCommandInteraction && !options.fetched
+        interaction instanceof ChatInputCommandInteraction && !options.replied
             ? await interaction.fetchReply()
-            : options.fetched
-            ? await interaction.channel?.send(message as BaseMessageOptions)
-            : await interaction.reply(message as InteractionReplyOptions);
-
-    if (!sent) return;
+            : options.replied
+            ? await interaction.followUp(message)
+            : await interaction.reply(message);
 
     const filter = (interaction: ButtonInteraction) =>
-        ['first', 'previous', 'delete', 'next', 'last'].includes(interaction.customId);
+        ['first', 'previous', 'next', 'last'].includes(interaction.customId);
     const collecter = sent.createMessageComponentCollector({
         filter,
         componentType: ComponentType.Button,
@@ -97,10 +86,6 @@ export const embedPages = async (
             case 'previous':
                 currentPage = currentPage > 0 ? --currentPage : pages.length - 1;
                 break;
-
-            case 'delete':
-                await sent.delete();
-                return;
 
             case 'next':
                 currentPage = currentPage + 1 < pages.length ? ++currentPage : 0;
@@ -125,7 +110,7 @@ export const embedPages = async (
             case pages.length - 1:
                 rows[0]?.setComponents(
                     buttons.map((button, index) =>
-                        [3, 4].includes(index)
+                        [2, 3].includes(index)
                             ? button.setDisabled(true)
                             : button.setDisabled(false),
                     ),

@@ -2,6 +2,14 @@ import { setTimeout as sleep } from 'node:timers/promises';
 
 import { QueryType, QueueRepeatMode, useTimeline } from 'discord-player';
 import type { GuildQueue, Track } from 'discord-player';
+import {
+    ActionRowBuilder,
+    ApplicationCommandOptionType,
+    ButtonBuilder,
+    ButtonStyle,
+    ComponentType,
+    EmbedBuilder,
+} from 'discord.js';
 import type {
     AutocompleteInteraction,
     ButtonInteraction,
@@ -11,14 +19,6 @@ import type {
     Message,
     TextBasedChannel,
     VoiceChannel,
-} from 'discord.js';
-import {
-    ActionRowBuilder,
-    ApplicationCommandOptionType,
-    ButtonBuilder,
-    ButtonStyle,
-    ComponentType,
-    EmbedBuilder,
 } from 'discord.js';
 
 import type { ExClient } from '../ExClient';
@@ -117,12 +117,6 @@ export default class extends ExCommand {
                     .setStyle(ButtonStyle.Primary),
 
                 new ButtonBuilder()
-                    .setCustomId('toggle_autoplay')
-                    .setLabel('AutoPlay')
-                    .setEmoji({ id: '1112677125921705984' })
-                    .setStyle(ButtonStyle.Primary),
-
-                new ButtonBuilder()
                     .setCustomId('show_playlist')
                     .setLabel('Playlist')
                     .setEmoji({ id: '1112677148700975134' })
@@ -216,6 +210,7 @@ export default class extends ExCommand {
                 leaveOnEmpty: true,
                 volume: 50,
                 metadata: {
+                    guild: interaction.guild,
                     channel: interaction.channel,
                 },
             });
@@ -264,6 +259,15 @@ export default class extends ExCommand {
                 if (!track) return;
 
                 queue.addTrack(result.playlist ? result.tracks : track);
+
+                await interaction.followUp({
+                    embeds: [
+                        new EmbedBuilder()
+                            .setColor('DarkPurple')
+                            .setTitle(`${this.client._emojis.namek.success} New music added!`)
+                            .setDescription(`\`${track.title}\` をキューに追加しました！`),
+                    ],
+                });
 
                 if (!queue.isPlaying()) await queue.node.play();
 
@@ -338,11 +342,13 @@ export default class extends ExCommand {
             components: this.rows,
         }));
 
+        this.client.globalEmbed = this.embed;
+
         this.readyMusicPanel(interaction);
 
         this.client.panels.set(this.channel.id, { message });
 
-        await this.updateMusicPanelTimeline().catch(e => this.logger.error(e));
+        await this.updateMusicPanel();
     };
 
     private readonly readyMusicPanel = (interaction: ChatInputCommandInteraction): void => {
@@ -399,34 +405,8 @@ export default class extends ExCommand {
                     await musicManager.toggleTrackState();
                     break;
 
-                // [1] If this case in MusicManager prototype, the func need many args. So only skip doesn't use MusicManager.
                 case 'skip_track': {
-                    this.queue.node.skip();
-
-                    await interaction
-                        .followUp({
-                            embeds: [
-                                new EmbedBuilder()
-                                    .setColor('DarkPurple')
-                                    .setTitle(
-                                        `${this.client._emojis.namek.success} Skip successfully!`,
-                                    )
-                                    .setDescription(
-                                        `\`${
-                                            this.queue.currentTrack?.title ?? 'N/A'
-                                        }\` のスキップに成功しました！`,
-                                    ),
-                            ],
-                        })
-                        .then(message => delayDelete(3, message));
-
-                    try {
-                        await this.updateMusicPanelInfomation(this.queue.currentTrack).then(() =>
-                            this.updateMusicPanelTimeline(),
-                        );
-                    } catch (e) {
-                        this.logger.error(e);
-                    }
+                    await musicManager.skipTrack();
                     break;
                 }
 
@@ -443,13 +423,27 @@ export default class extends ExCommand {
                     break;
 
                 case 'stop_track':
-                    await musicManager.stopTrack();
-                    break;
-
-                case 'toggle_autoplay':
+                    await musicManager.stopTrack().then(() =>
+                        this.message
+                            .edit({
+                                embeds: [
+                                    new EmbedBuilder()
+                                        .setColor('DarkPurple')
+                                        .setTitle(
+                                            `${this.client._emojis.namek.success} Player was stopped by user!`,
+                                        )
+                                        .setDescription(
+                                            'プレイヤーはユーザーによって停止されました。',
+                                        ),
+                                ],
+                                components: [],
+                            })
+                            .then(message => delayDelete(3, message)),
+                    );
                     break;
 
                 case 'show_playlist':
+                    await musicManager.showPlaylist();
                     break;
             }
         } catch (e) {
@@ -459,9 +453,11 @@ export default class extends ExCommand {
                 embeds: [
                     new EmbedBuilder()
                         .setColor('Red')
-                        .setTitle(`${this.client._emojis.namek.failure} Unknown error`)
+                        .setTitle(`${this.client._emojis.namek.failure} Unknown error.`)
                         .setDescription(
-                            `予期せぬエラーが発生しました。 ${this.client.developer.toString()} にメンションしてください。`,
+                            `予期せぬエラーが発生しました。 ${
+                                this.client.developer?.toString() ?? 'N/A'
+                            } にメンションしてください。`,
                         ),
                 ],
             });
@@ -514,9 +510,11 @@ export default class extends ExCommand {
         });
     };
 
-    private readonly updateMusicPanelTimeline = async (): Promise<void> => {
+    private readonly updateMusicPanel = async (): Promise<void> => {
         while (this.queue.isPlaying()) {
             await sleep(3000);
+
+            await this.updateMusicPanelInfomation(this.queue.currentTrack);
 
             const panel = this.client.panels.get(this.channel.id);
             const fields = this.embed.data.fields;

@@ -33,6 +33,7 @@
         "@typescript-eslint/no-use-before-define": ["error", "nofunc"],
         "@typescript-eslint/no-useless-empty-export": "error",
         "@typescript-eslint/no-invalid-void-type": "off",
+        "@typescript-eslint/no-non-null-assertion": "off",
         "@typescript-eslint/prefer-readonly": "error",
         "@typescript-eslint/prefer-regexp-exec": "error",
         "@typescript-eslint/sort-type-constituents": "error",
