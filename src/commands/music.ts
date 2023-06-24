@@ -28,7 +28,8 @@ import { createShortUrl, delayDelete, undoShortUrl } from '../utils';
 
 export default class extends ExCommand {
     private queue!: GuildQueue<{
-        channel: TextBasedChannel | null;
+        guild: Guild;
+        channel: TextBasedChannel;
     }>;
 
     private guild!: Guild;
@@ -146,8 +147,7 @@ export default class extends ExCommand {
 
         if (
             (await interaction.guild?.members.fetch(interaction.user.id))?.voice.channel !==
-                interaction.guild?.members.me?.voice.channel &&
-            interaction.guild?.members.me?.voice.channel?.joinable
+            interaction.guild?.members.me?.voice.channel
         )
             return interaction
                 .followUp({
@@ -284,7 +284,7 @@ export default class extends ExCommand {
                 })
                 .then(message => delayDelete(3, message));
 
-        this.queue = queue as GuildQueue<{ channel: TextBasedChannel | null }>;
+        this.queue = queue as GuildQueue<{ guild: Guild; channel: TextBasedChannel }>;
 
         const track = this.queue.currentTrack;
 
